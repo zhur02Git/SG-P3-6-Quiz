@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SG Study Quiz · Primary School P3–P6</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f0ea;--card:#fffdf8;--ink:#17120e;--ink2:#6a5c4f;
+  --accent:#c94b0a;--accent2:#1460b0;--green:#1a9456;
+  --red:#c42b2b;--amber:#d08800;--purple:#7b35c4;
+  --teal:#0e8a7a;--border:#ddd0bc;--shadow:rgba(70,40,10,.10);
+  --r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 14px rgba(0,0,0,.28);}
+.logo{font-family:'DM Serif Display',serif;font-size:19px;letter-spacing:.3px;}
+.logo em{color:var(--accent);font-style:normal;}
+.app{max-width:960px;margin:0 auto;padding:26px 18px 80px;}
+.screen{display:none;animation:fadeUp .38s ease both;}
+.screen.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* HOME LAYOUT */
+.home-layout{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;}
+@media(max-width:760px){.home-layout{grid-template-columns:1fr;}}
+
+/* ERROR BANK SIDEBAR */
+.eb-sidebar{background:var(--card);border:2px solid var(--border);border-radius:18px;
+  padding:22px 20px;box-shadow:0 4px 20px var(--shadow);position:sticky;top:78px;}
+.eb-sidebar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.eb-sidebar-title{font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;gap:8px;}
+.eb-count-chip{background:var(--red);color:#fff;font-size:11px;font-weight:900;border-radius:20px;padding:2px 9px;}
+.eb-mini-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.eb-mini-stat{background:var(--bg);border-radius:10px;padding:10px 8px;text-align:center;}
+.eb-mini-stat-num{font-size:20px;font-weight:900;}
+.eb-mini-stat-lbl{font-size:9px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.7px;margin-top:1px;}
+.eb-empty-mini{text-align:center;padding:24px 10px;color:var(--ink2);}
+.eb-empty-mini-icon{font-size:36px;margin-bottom:8px;}
+.eb-empty-mini-text{font-size:13px;font-weight:700;margin-bottom:3px;}
+.eb-empty-mini-sub{font-size:11px;line-height:1.5;}
+.eb-mini-list{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;margin-bottom:14px;}
+.eb-mini-item{background:var(--bg);border-radius:9px;padding:9px 11px;border-left:3px solid var(--red);position:relative;}
+.eb-mini-item.mastered{border-left-color:var(--green);}
+.eb-mini-item-topic{font-size:9.5px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;}
+.eb-mini-item-q{font-size:11.5px;font-weight:700;line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.eb-mini-item-ans{font-size:11px;color:var(--green);font-weight:700;margin-top:2px;}
+.eb-mini-remove{position:absolute;top:6px;right:7px;background:none;border:none;
+  color:var(--ink2);cursor:pointer;font-size:13px;opacity:.5;line-height:1;}
+.eb-mini-remove:hover{opacity:1;color:var(--red);}
+.eb-mini-actions{display:flex;flex-direction:column;gap:7px;}
+.btn-practice-eb{background:var(--green);color:#fff;border:none;border-radius:10px;
+  padding:11px 16px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;
+  cursor:pointer;transition:all .18s;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-practice-eb:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.btn-practice-eb:disabled{opacity:.4;cursor:default;transform:none;}
+.btn-clear-eb{background:none;border:1.5px solid var(--border);border-radius:10px;
+  padding:8px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;color:var(--ink2);transition:all .18s;width:100%;}
+.btn-clear-eb:hover{border-color:var(--red);color:var(--red);}
+
+/* SELECTOR CARDS */
+.sel-grid{display:grid;gap:11px;margin-bottom:24px;}
+.sel-grid.col2{grid-template-columns:repeat(2,1fr);}
+.sel-grid.col3{grid-template-columns:repeat(3,1fr);}
+.sel-grid.col4{grid-template-columns:repeat(4,1fr);}
+.sel-grid.col6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:600px){
+  .sel-grid.col3,.sel-grid.col4,.sel-grid.col6{grid-template-columns:repeat(2,1fr);}
+}
+.sel-card{background:var(--card);border:2px solid var(--border);border-radius:var(--r);
+  padding:18px 14px;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  text-align:center;position:relative;overflow:hidden;user-select:none;}
+.sel-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:var(--tc,var(--accent));transform:scaleX(0);transform-origin:left;transition:transform .2s;}
+.sel-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px var(--shadow);border-color:var(--tc,var(--accent));}
+.sel-card:hover::after,.sel-card.sel-active::after{transform:scaleX(1);}
+.sel-card.sel-active{border-color:var(--tc,var(--accent));
+  background:color-mix(in srgb,var(--tc,var(--accent)) 8%,var(--card));}
+.sel-card.locked{opacity:.6;cursor:not-allowed;}
+.sel-card.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
+.sel-card.locked::after{display:none;}
+.sel-icon{font-size:26px;margin-bottom:7px;}
+.sel-title{font-weight:800;font-size:13.5px;margin-bottom:2px;}
+.sel-sub{font-size:10.5px;color:var(--ink2);line-height:1.4;}
+.sel-badge{position:absolute;top:9px;right:9px;font-size:9.5px;font-weight:800;
+  padding:2px 7px;border-radius:5px;color:#fff;background:var(--tc,var(--accent));}
+.lock-badge{position:absolute;top:9px;right:9px;font-size:11px;}
+
+/* SECTION LABELS / HERO */
+.slabel{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--ink2);margin-bottom:11px;margin-top:2px;}
+.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(24px,3.8vw,40px);line-height:1.2;margin-bottom:7px;}
+.hero-title em{color:var(--accent);font-style:italic;}
+.hero-sub{font-size:13.5px;color:var(--ink2);font-weight:600;line-height:1.65;margin-bottom:20px;max-width:480px;}
+.moe-tag{display:inline-block;background:rgba(20,96,176,.1);color:var(--accent2);
+  border:1.5px solid rgba(20,96,176,.25);border-radius:7px;font-size:11.5px;font-weight:800;
+  padding:3px 11px;margin-bottom:22px;letter-spacing:.4px;}
+.premium-tag{display:inline-block;background:rgba(208,136,0,.12);color:var(--amber);
+  border:1.5px solid rgba(208,136,0,.3);border-radius:7px;font-size:11.5px;font-weight:800;
+  padding:3px 11px;margin-left:8px;letter-spacing:.4px;}
+
+/* BUTTONS */
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:11px;
+  padding:12px 28px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
+  cursor:pointer;transition:all .18s;box-shadow:0 4px 13px rgba(201,75,10,.28);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 7px 18px rgba(201,75,10,.38);}
+.btn-primary:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none;}
+.btn-secondary{background:transparent;color:var(--ink);border:2px solid var(--border);
+  border-radius:11px;padding:10px 20px;font-family:'Nunito',sans-serif;font-size:13.5px;
+  font-weight:700;cursor:pointer;transition:all .18s;}
+.btn-secondary:hover{border-color:var(--ink);}
+.btn-ghost{background:none;border:none;color:var(--ink2);font-size:13px;font-weight:700;
+  cursor:pointer;text-decoration:underline;font-family:'Nunito',sans-serif;}
+.btn-ghost:hover{color:var(--red);}
+.btn-green{background:var(--green);color:#fff;border:none;border-radius:11px;
+  padding:12px 26px;font-family:'Nunito',sans-serif;font-size:13.5px;font-weight:800;
+  cursor:pointer;transition:all .18s;}
+.btn-green:hover{transform:translateY(-2px);}
+.btn-amber{background:var(--amber);color:#fff;border:none;border-radius:11px;
+  padding:12px 26px;font-family:'Nunito',sans-serif;font-size:13.5px;font-weight:800;
+  cursor:pointer;transition:all .18s;}
+.btn-amber:hover{transform:translateY(-2px);}
+.action-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:4px;}
+
+/* TOPICS GRID */
+.topics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:11px;margin-bottom:24px;}
+.topic-card{background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:16px 14px;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
+.topic-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--tc,var(--accent));transform:scaleX(0);transform-origin:left;transition:transform .2s;}
+.topic-card:hover{transform:translateY(-3px);box-shadow:0 9px 24px var(--shadow);border-color:var(--tc,var(--accent));}
+.topic-card:hover::before,.topic-card.selected::before{transform:scaleX(1);}
+.topic-card.selected{border-color:var(--tc,var(--accent));background:color-mix(in srgb,var(--tc,var(--accent)) 7%,var(--card));}
+.tc-icon{font-size:22px;margin-bottom:6px;}
+.tc-name{font-weight:800;font-size:12.5px;margin-bottom:2px;line-height:1.3;}
+.tc-desc{font-size:10px;color:var(--ink2);line-height:1.5;}
+.tc-count{position:absolute;top:10px;right:10px;font-size:9px;font-weight:800;color:var(--ink2);
+  background:var(--bg);border-radius:5px;padding:1px 6px;}
+
+/* COUNT PILLS */
+.count-row{display:flex;gap:7px;margin-bottom:22px;flex-wrap:wrap;}
+.btn-cnt{background:transparent;color:var(--ink);border:2px solid var(--border);border-radius:9px;
+  padding:7px 17px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;}
+.btn-cnt.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.btn-cnt:hover:not(.active){border-color:var(--ink);}
+
+/* QUIZ */
+.quiz-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:9px;}
+.prog-wrap{display:flex;align-items:center;gap:9px;}
+.prog-info{font-size:12px;font-weight:700;color:var(--ink2);}
+.prog-track{width:130px;height:7px;background:var(--border);border-radius:6px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .4s ease;}
+.quiz-mode-tag{font-size:10px;font-weight:800;padding:3px 9px;border-radius:6px;text-transform:uppercase;letter-spacing:.6px;}
+.quiz-mode-tag.normal{background:rgba(20,96,176,.12);color:var(--accent2);}
+.quiz-mode-tag.errorbank{background:rgba(196,43,43,.12);color:var(--red);}
+.score-badge{font-size:12px;font-weight:800;color:var(--green);background:rgba(26,148,86,.12);border-radius:18px;padding:3px 11px;}
+.topic-pill{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:6px;color:#fff;background:var(--tc,var(--accent));text-transform:uppercase;letter-spacing:.5px;}
+.question-card{background:var(--card);border:2px solid var(--border);border-radius:17px;
+  padding:26px 30px;margin-bottom:13px;box-shadow:0 4px 18px var(--shadow);}
+@media(max-width:540px){.question-card{padding:16px 14px;}}
+.q-num-lbl{font-size:10px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.q-text{font-family:'DM Serif Display',serif;font-size:clamp(14.5px,2.1vw,19px);line-height:1.55;margin-bottom:16px;}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:480px){.options-grid{grid-template-columns:1fr;}}
+.option-btn{background:var(--bg);border:2px solid var(--border);border-radius:10px;
+  padding:11px 14px;text-align:left;cursor:pointer;font-family:'Nunito',sans-serif;
+  font-size:13px;font-weight:700;color:var(--ink);transition:all .17s;display:flex;align-items:flex-start;gap:9px;width:100%;}
+.option-btn:hover:not(:disabled){border-color:var(--accent2);background:rgba(20,96,176,.06);transform:translateX(2px);}
+.opt-letter{width:23px;height:23px;border-radius:6px;background:var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;
+  flex-shrink:0;margin-top:1px;transition:all .17s;}
+.option-btn.correct{border-color:var(--green);background:rgba(26,148,86,.09);color:#0b4d30;}
+.option-btn.correct .opt-letter{background:var(--green);color:#fff;}
+.option-btn.wrong{border-color:var(--red);background:rgba(196,43,43,.07);color:#5e1010;}
+.option-btn.wrong .opt-letter{background:var(--red);color:#fff;}
+.option-btn:disabled{cursor:default;}
+.feedback-box{margin-top:13px;padding:12px 15px;border-radius:10px;font-size:12.5px;line-height:1.75;font-weight:600;display:none;}
+.feedback-box.show{display:block;animation:fadeUp .26s ease both;}
+.feedback-box.correct{background:rgba(26,148,86,.1);border:1.5px solid var(--green);color:#0b4d30;}
+.feedback-box.wrong{background:rgba(196,43,43,.07);border:1.5px solid var(--red);color:#5e1010;}
+.explanation{margin-top:5px;font-weight:600;color:var(--ink2);font-size:11.5px;line-height:1.8;}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:15px;}
+.btn-next{background:var(--ink);color:#fff;border:none;border-radius:10px;padding:10px 22px;
+  font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all .17s;display:none;align-items:center;gap:5px;}
+.btn-next.show{display:flex;}.btn-next:hover{background:#2a1a08;transform:translateX(2px);}
+
+/* RESULTS */
+.results-card{background:var(--card);border:2px solid var(--border);border-radius:20px;
+  padding:36px 28px;text-align:center;box-shadow:0 8px 32px var(--shadow);margin-bottom:20px;}
+.result-emoji{font-size:56px;margin-bottom:10px;}
+.result-title{font-family:'DM Serif Display',serif;font-size:28px;margin-bottom:5px;}
+.result-score{font-size:48px;font-weight:900;color:var(--accent);line-height:1;margin:10px 0 4px;}
+.result-total{font-size:13px;color:var(--ink2);font-weight:600;margin-bottom:16px;}
+.result-msg{font-size:13px;color:var(--ink2);font-weight:600;max-width:360px;margin:0 auto 20px;line-height:1.7;}
+.stat-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
+.stat-box{background:var(--bg);border-radius:10px;padding:11px 16px;text-align:center;min-width:76px;}
+.stat-num{font-size:21px;font-weight:900;}.stat-lbl{font-size:9px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:1px;}
+.eb-saved-note{background:rgba(196,43,43,.07);border:1.5px solid var(--red);border-radius:9px;
+  padding:9px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--red);margin-top:12px;}
+.results-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+.review-section{text-align:left;}
+.review-title{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:11px;}
+.review-item{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--border);}
+.review-item.ri-correct{border-left-color:var(--green);}
+.review-item.ri-wrong{border-left-color:var(--red);}
+.ri-q{font-weight:700;font-size:12.5px;margin-bottom:5px;line-height:1.5;}
+.ri-ans{font-size:11.5px;font-weight:600;}.ri-ans .ca{color:var(--green);}
+.ri-exp{font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.65;}
+
+/* BACK LINK */
+.back-link{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--ink2);
+  cursor:pointer;margin-bottom:18px;width:fit-content;transition:color .15s;}
+.back-link:hover{color:var(--ink);}
+
+/* SUBJECT COLOURS */
+.subj-math{--tc:#1460b0;}
+.subj-english{--tc:#c94b0a;}
+.subj-science{--tc:#0e8a7a;}
+
+/* CONFETTI */
+.confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;}
+.dot{position:absolute;border-radius:2px;opacity:0;animation:fall 2.5s ease-in forwards;}
+@keyframes fall{0%{opacity:1;transform:translateY(-20px) rotate(0deg)}100%{opacity:0;transform:translateY(100vh) rotate(720deg)}}
+.divider{height:1px;background:var(--border);margin:18px 0;}
+
+/* LOGIN */
+.login-wrap{min-height:calc(100vh - 58px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:var(--card);border:2px solid var(--border);border-radius:22px;padding:44px 40px;width:100%;max-width:420px;box-shadow:0 8px 40px var(--shadow);text-align:center;}
+@media(max-width:480px){.login-card{padding:32px 22px;}}
+.login-logo{font-family:'DM Serif Display',serif;font-size:28px;margin-bottom:4px;}
+.login-logo em{color:var(--accent);font-style:normal;}
+.login-subtitle{font-size:13px;color:var(--ink2);font-weight:600;margin-bottom:28px;line-height:1.6;}
+.login-field{text-align:left;margin-bottom:16px;}
+.login-field label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--ink2);margin-bottom:6px;}
+.login-input{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;background:var(--bg);color:var(--ink);outline:none;transition:border-color .18s;}
+.login-input:focus{border-color:var(--accent2);}
+.login-err{font-size:12px;color:var(--red);font-weight:700;margin-bottom:12px;min-height:18px;text-align:left;}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all .18s;box-shadow:0 4px 14px rgba(201,75,10,.28);margin-top:4px;}
+.login-btn:hover{transform:translateY(-2px);}
+.login-note{font-size:11.5px;color:var(--ink2);margin-top:18px;line-height:1.6;}
+.user-chips{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+.user-chip{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:10px;}
+.user-chip:hover{border-color:var(--accent);transform:translateX(2px);}
+.user-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;flex-shrink:0;}
+.user-info{flex:1;text-align:left;}
+.user-name{font-weight:800;font-size:13px;}
+.user-stats{font-size:11px;color:var(--ink2);font-weight:600;}
+.user-chip-del{background:none;border:none;color:var(--ink2);cursor:pointer;font-size:14px;padding:2px 5px;border-radius:5px;opacity:.5;transition:opacity .15s;}
+.user-chip-del:hover{opacity:1;color:var(--red);}
+.login-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink2);font-size:12px;font-weight:700;}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* HEADER USER */
+.header-user{display:flex;align-items:center;gap:9px;}
+.header-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex-shrink:0;}
+.header-username{font-size:12px;font-weight:800;color:#fff;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-logout{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75);border:1.5px solid rgba(255,255,255,.2);border-radius:7px;padding:4px 10px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;transition:all .18s;}
+.header-logout:hover{background:rgba(255,255,255,.22);color:#fff;}
+
+/* PAYWALL */
+.paywall-card{background:linear-gradient(135deg,#fffdf8 0%,#fff9ee 100%);border:2px solid rgba(208,136,0,.4);border-radius:18px;padding:32px 28px;text-align:center;box-shadow:0 8px 32px rgba(208,136,0,.15);margin-bottom:20px;}
+.paywall-emoji{font-size:48px;margin-bottom:12px;}
+.paywall-title{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:8px;color:var(--amber);}
+.paywall-sub{font-size:13px;color:var(--ink2);font-weight:600;line-height:1.7;margin-bottom:20px;max-width:380px;margin-left:auto;margin-right:auto;}
+.paywall-price{font-size:32px;font-weight:900;color:var(--ink);margin-bottom:4px;}
+.paywall-price-sub{font-size:11px;color:var(--ink2);font-weight:700;margin-bottom:20px;}
+.paywall-features{text-align:left;background:var(--bg);border-radius:12px;padding:16px 18px;margin-bottom:20px;}
+.paywall-feature{font-size:13px;font-weight:700;color:var(--ink2);padding:4px 0;display:flex;align-items:center;gap:9px;}
+.paywall-feature::before{content:'✓';color:var(--green);font-weight:900;}
+
+/* LOADING */
+.loading-wrap{display:flex;align-items:center;justify-content:center;min-height:200px;flex-direction:column;gap:12px;}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;font-weight:700;color:var(--ink2);}
+
+/* SETUP BANNER */
+.setup-banner{background:rgba(20,96,176,.07);border:1.5px solid rgba(20,96,176,.25);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:12.5px;font-weight:600;color:var(--accent2);line-height:1.7;}
+.setup-banner strong{color:var(--ink);}
+.setup-banner code{background:rgba(20,96,176,.1);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px;}
+
+/* WELCOME COVER */
+.welcome-wrap{min-height:calc(100vh - 58px);display:flex;align-items:center;justify-content:center;
+  padding:20px;background:linear-gradient(160deg,#eef4ff 0%,#f3f0ea 55%,#fce8d8 100%);}
+.welcome-card{background:#fffdf8;border:2px solid #d8e8f0;border-radius:28px;
+  padding:44px 40px 36px;width:100%;max-width:440px;
+  box-shadow:0 12px 48px rgba(20,96,176,.12);text-align:center;}
+@media(max-width:480px){.welcome-card{padding:32px 22px 28px;}}
+.welcome-stars{font-size:20px;letter-spacing:8px;margin-bottom:14px;opacity:.8;}
+.welcome-logo-wrap{margin:0 auto 20px;width:72px;height:72px;background:linear-gradient(135deg,var(--accent2),var(--accent));
+  border-radius:20px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(20,96,176,.28);}
+.welcome-logo-wrap span{font-size:36px;}
+.welcome-title{font-family:'DM Serif Display',serif;font-size:26px;color:#17120e;margin-bottom:6px;line-height:1.2;}
+.welcome-title em{color:var(--accent);font-style:italic;}
+.welcome-msg{font-size:13px;color:#6a5c4f;font-weight:600;line-height:1.7;margin-bottom:24px;}
+.welcome-btn{background:linear-gradient(135deg,#1460b0 0%,#2070d0 100%);color:#fff;border:none;
+  border-radius:14px;padding:15px 36px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;transition:all .2s;box-shadow:0 5px 18px rgba(20,96,176,.32);width:100%;margin-bottom:18px;}
+.welcome-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,96,176,.4);}
+.welcome-footer{font-size:11px;color:#b0a090;font-weight:700;letter-spacing:.6px;}
+.welcome-plan-badges{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.plan-badge-free{background:rgba(26,148,86,.1);color:var(--green);border:1.5px solid rgba(26,148,86,.3);
+  border-radius:20px;padding:4px 14px;font-size:11px;font-weight:800;}
+.plan-badge-pro{background:linear-gradient(135deg,rgba(208,136,0,.15),rgba(201,75,10,.12));
+  color:var(--amber);border:1.5px solid rgba(208,136,0,.35);
+  border-radius:20px;padding:4px 14px;font-size:11px;font-weight:800;}
+
+/* PRO BADGE IN HEADER */
+.plan-chip{font-size:10px;font-weight:900;border-radius:20px;padding:2px 9px;letter-spacing:.4px;}
+.plan-chip.free{background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);}
+.plan-chip.pro{background:linear-gradient(135deg,#d08800,#e09010);color:#fff;}
+
+/* DAILY LIMIT BANNER */
+.daily-banner{background:rgba(201,75,10,.07);border:1.5px solid rgba(201,75,10,.25);border-radius:12px;
+  padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.daily-banner-text{font-size:12.5px;font-weight:700;color:var(--accent);flex:1;}
+.daily-banner-count{font-size:18px;font-weight:900;color:var(--accent);}
+.btn-upgrade-inline{background:var(--amber);color:#fff;border:none;border-radius:8px;
+  padding:6px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all .18s;}
+.btn-upgrade-inline:hover{filter:brightness(1.1);}
+
+/* PRO UPGRADE MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;
+  display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);}
+.modal-card{background:var(--card);border-radius:24px;padding:36px 32px;width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;position:relative;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;
+  color:var(--ink2);cursor:pointer;line-height:1;opacity:.5;}
+.modal-close:hover{opacity:1;}
+.modal-emoji{font-size:48px;margin-bottom:10px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--ink2);font-weight:600;line-height:1.7;margin-bottom:18px;}
+.modal-price{font-size:38px;font-weight:900;color:var(--ink);margin-bottom:2px;}
+.modal-price-sub{font-size:11.5px;color:var(--ink2);font-weight:700;margin-bottom:18px;}
+.modal-features{text-align:left;background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:20px;}
+.modal-feature{font-size:12.5px;font-weight:700;color:var(--ink2);padding:4px 0;
+  display:flex;align-items:center;gap:9px;}
+.modal-feature .feat-icon{font-size:14px;width:18px;text-align:center;}
+.modal-feature.pro-feat{color:var(--ink);}
+.modal-feature.free-feat{color:var(--ink2);opacity:.65;}
+.feat-label{font-size:9px;font-weight:900;padding:1px 6px;border-radius:4px;margin-left:auto;flex-shrink:0;}
+.feat-label.free-lbl{background:rgba(26,148,86,.15);color:var(--green);}
+.feat-label.pro-lbl{background:rgba(208,136,0,.2);color:var(--amber);}
+.btn-stripe{background:linear-gradient(135deg,#635bff,#7b6cff);color:#fff;border:none;border-radius:12px;
+  padding:14px 28px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;transition:all .2s;width:100%;margin-bottom:10px;
+  box-shadow:0 5px 18px rgba(99,91,255,.35);}
+.btn-stripe:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,91,255,.45);}
+.modal-or{font-size:11px;color:var(--ink2);font-weight:700;margin:6px 0 10px;}
+.btn-code-unlock{background:none;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px;width:100%;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;
+  color:var(--ink2);cursor:pointer;transition:all .18s;}
+.btn-code-unlock:hover{border-color:var(--amber);color:var(--amber);}
+
+/* EB LOCKED STATE */
+.eb-locked{text-align:center;padding:28px 14px;}
+.eb-locked-icon{font-size:38px;margin-bottom:8px;}
+.eb-locked-title{font-size:13.5px;font-weight:800;margin-bottom:5px;}
+.eb-locked-sub{font-size:11.5px;color:var(--ink2);font-weight:600;line-height:1.5;margin-bottom:14px;}
+
+/* FEEDBACK SCREEN */
+.feedback-screen{max-width:560px;margin:0 auto;}
+.feedback-header{text-align:center;margin-bottom:28px;}
+.feedback-header h2{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:6px;}
+.feedback-header p{font-size:13px;color:var(--ink2);font-weight:600;line-height:1.6;}
+.feedback-form{background:var(--card);border:2px solid var(--border);border-radius:18px;padding:28px 24px;
+  box-shadow:0 4px 18px var(--shadow);}
+.fb-field{margin-bottom:18px;}
+.fb-label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  color:var(--ink2);margin-bottom:7px;}
+.fb-input,.fb-select,.fb-textarea{width:100%;padding:11px 14px;border:2px solid var(--border);
+  border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;
+  background:var(--bg);color:var(--ink);outline:none;transition:border-color .18s;}
+.fb-input:focus,.fb-select:focus,.fb-textarea:focus{border-color:var(--accent2);}
+.fb-textarea{min-height:130px;resize:vertical;line-height:1.6;}
+.fb-select{appearance:none;cursor:pointer;}
+.fb-submit{width:100%;padding:13px;background:var(--accent2);color:#fff;border:none;border-radius:12px;
+  font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;
+  transition:all .18s;box-shadow:0 4px 14px rgba(20,96,176,.28);}
+.fb-submit:hover{transform:translateY(-2px);box-shadow:0 7px 20px rgba(20,96,176,.38);}
+.fb-success{background:rgba(26,148,86,.08);border:1.5px solid var(--green);border-radius:12px;
+  padding:20px;text-align:center;margin-top:16px;display:none;}
+.fb-success-icon{font-size:32px;margin-bottom:6px;}
+.fb-success-text{font-size:13.5px;font-weight:700;color:var(--green);}
+.fb-note{font-size:11px;color:var(--ink2);margin-top:14px;text-align:center;line-height:1.5;}
+
+/* LIMIT REACHED OVERLAY */
+.limit-overlay{background:rgba(201,75,10,.06);border:2px solid rgba(201,75,10,.25);border-radius:18px;
+  padding:36px 28px;text-align:center;margin:20px 0;}
+.limit-emoji{font-size:52px;margin-bottom:12px;}
+.limit-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px;color:var(--accent);}
+.limit-sub{font-size:13px;color:var(--ink2);font-weight:600;line-height:1.7;margin-bottom:20px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">SG <em>Study</em> Quiz</div>
+  <div class="header-user" id="header-user" style="display:none">
+    <span class="plan-chip free" id="header-plan-chip">FREE</span>
+    <div class="header-avatar" id="header-avatar"></div>
+    <span class="header-username" id="header-username"></span>
+    <button class="header-logout" onclick="showFeedbackScreen()" style="margin-right:4px">💬</button>
+    <button class="header-logout" onclick="logout()">Switch</button>
+  </div>
+  <div id="header-moe" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.8px;">MOE P3–P6</div>
+</header>
+
+
+
+
+<div class="app" id="app-shell">
+
+<!-- SCREEN 1: HOME -->
+<div class="screen active" id="s-home">
+  <div class="home-layout">
+    <div>
+      <div class="hero-title">Practice <em>Singapore</em><br>Primary School</div>
+      <div class="hero-sub">Practice questions for P3 to P6 across Mathematics, English Language and Science.</div>
+      <div class="moe-tag">📘 MOE Primary Syllabus · P3–P6</div>
+
+      <!-- Daily limit banner (free users) -->
+      <div id="daily-banner" style="display:none" class="daily-banner">
+        <div>
+          <div class="daily-banner-text">📊 Today: <span id="daily-used">0/2 quizzes · 0/1 Error Bank</span></div>
+          <div style="font-size:11px;color:var(--ink2);font-weight:600;margin-top:2px;">Resets at midnight · <a href="#" onclick="showUpgradeModal()" style="color:var(--amber);font-weight:800;">Upgrade to Pro ⭐</a></div>
+        </div>
+      </div>
+
+      <div id="data-status"></div>
+
+      <div class="slabel">Choose your level</div>
+      <div class="sel-grid col2" id="level-grid">
+        <div class="sel-card" style="--tc:#0e8a7a" onclick="pickLevel('P3')">
+          <div class="sel-icon">🌱</div>
+          <div class="sel-title">Primary 3</div>
+          <div class="sel-sub">Whole Numbers · Tenses · Plants · Matter</div>
+        </div>
+        <div class="sel-card" style="--tc:#1460b0" onclick="pickLevel('P4')">
+          <div class="sel-icon">📘</div>
+          <div class="sel-title">Primary 4</div>
+          <div class="sel-sub">Fractions · Angles · Digestion · Electricity</div>
+        </div>
+        <div class="sel-card" style="--tc:#7b35c4" onclick="pickLevel('P5')">
+          <div class="sel-icon">🔬</div>
+          <div class="sel-title">Primary 5</div>
+          <div class="sel-sub">Decimals · Ratio · Cells · Forces</div>
+        </div>
+        <div class="sel-card" style="--tc:#c94b0a" onclick="pickLevel('P6')">
+          <div class="sel-icon">🎓</div>
+          <div class="sel-title">Primary 6</div>
+          <div class="sel-sub">Algebra · Percentage · PSLE Preparation</div>
+        </div>
+      </div>
+
+      <div style="margin-top:6px;margin-bottom:0">
+        <button onclick="showFeedbackScreen()" class="btn-ghost">💬 Feedback &amp; Suggestions</button>
+      </div>
+    </div>
+
+    <!-- ERROR BANK SIDEBAR -->
+    <div class="eb-sidebar" id="eb-sidebar">
+      <div class="eb-sidebar-header">
+        <div class="eb-sidebar-title">📚 Error Bank <span class="eb-count-chip" id="eb-chip">0</span></div>
+      </div>
+      <div id="eb-sidebar-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: SUBJECT -->
+<div class="screen" id="s-subject">
+  <div class="back-link" onclick="showScreen('s-home')">← Home</div>
+  <div class="slabel" id="subject-label">Choose Subject</div>
+  <div class="sel-grid col3" id="subject-grid"></div>
+</div>
+
+
+
+
+<!-- SCREEN 5: QUIZ -->
+<div class="screen" id="s-quiz">
+  <div class="quiz-topbar">
+    <div class="prog-wrap">
+      <span class="prog-info" id="q-counter">Q 1 / 10</span>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+      <span class="quiz-mode-tag normal" id="quiz-mode-tag">Quiz</span>
+      <span class="topic-pill" id="q-pill">Topic</span>
+      <span class="score-badge" id="live-score">0/0</span>
+    </div>
+  </div>
+  <div class="question-card">
+    <div class="q-num-lbl" id="q-num-lbl">Question 1</div>
+    <div class="q-text" id="q-text"></div>
+    <div id="q-body"></div>
+    <div class="feedback-box" id="feedback"></div>
+  </div>
+  <div class="nav-row">
+    <button class="btn-ghost" onclick="confirmQuit()">✕ Quit</button>
+    <button class="btn-next" id="btn-next" onclick="nextQuestion()">Next →</button>
+  </div>
+</div>
+
+<!-- SCREEN 6: RESULTS -->
+<div class="screen" id="s-results">
+  <div class="results-card">
+    <div class="result-emoji" id="res-emoji">🎉</div>
+    <div class="result-title" id="res-title">Quiz Complete!</div>
+    <div class="result-score" id="res-score">8</div>
+    <div class="result-total" id="res-total">out of 10 correct</div>
+    <div class="result-msg" id="res-msg"></div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-num" id="st-c" style="color:var(--green)">0</div><div class="stat-lbl">Correct</div></div>
+      <div class="stat-box"><div class="stat-num" id="st-w" style="color:var(--red)">0</div><div class="stat-lbl">Wrong</div></div>
+      <div class="stat-box"><div class="stat-num" id="st-p" style="color:var(--accent)">0%</div><div class="stat-lbl">Score</div></div>
+    </div>
+    <div id="eb-res-note"></div>
+    <div class="results-actions">
+      <button class="btn-primary" onclick="moreQuizSameSubject()">🔄 More on Same Subject</button>
+      <button class="btn-green" onclick="goHomeEB()" id="res-practice-eb-btn" style="display:none">📚 Practice Errors</button>
+      <button class="btn-secondary" onclick="showScreen('s-subject')">← New Quiz</button>
+      <button class="btn-secondary" onclick="showScreen('s-home')">🏠 Home</button>
+    </div>
+  </div>
+  <div class="review-section">
+    <div class="review-title">Question Review</div>
+    <div id="review-list"></div>
+  </div>
+</div>
+
+<!-- SCREEN: FEEDBACK -->
+<div class="screen" id="s-feedback">
+  <div class="back-link" onclick="showScreen('s-home')">← Home</div>
+  <div class="feedback-screen">
+    <div class="feedback-header">
+      <h2>💬 Feedback &amp; Suggestions</h2>
+      <p>Help us improve! Your feedback goes directly to our team. We read every message.</p>
+    </div>
+    <div class="feedback-form">
+      <div class="fb-field">
+        <label class="fb-label" for="fb-type">Type of Feedback</label>
+        <select class="fb-select" id="fb-type">
+          <option value="suggestion">💡 Feature Suggestion</option>
+          <option value="bug">🐛 Bug / Error Report</option>
+          <option value="question">Question / Content Issue</option>
+          <option value="compliment">⭐ Compliment</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="fb-subject">Subject</label>
+        <input class="fb-input" id="fb-subject" type="text" placeholder="Brief summary of your feedback…" maxlength="100">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="fb-message">Message</label>
+        <textarea class="fb-textarea" id="fb-message" placeholder="Tell us more…"></textarea>
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="fb-email">Your Email <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink2)">(optional — for replies)</span></label>
+        <input class="fb-input" id="fb-email" type="email" placeholder="your@email.com">
+      </div>
+      <button class="fb-submit" onclick="submitFeedback()">Send Feedback →</button>
+      <div class="fb-success" id="fb-success">
+        <div class="fb-success-icon">✅</div>
+        <div class="fb-success-text">Thank you! Your feedback has been sent.</div>
+      </div>
+      <div class="fb-note">Messages are sent via your email client to our team inbox.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-shell -->
+
+<!-- PRO UPGRADE MODAL -->
+<div class="modal-overlay" id="upgrade-modal" style="display:none" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeUpgradeModal()">✕</button>
+    <div class="modal-emoji">⭐</div>
+    <div class="modal-title">Upgrade to Pro</div>
+    <div class="modal-sub">Unlock unlimited practice and advanced features for your child's learning journey.</div>
+    <div class="modal-price">S$30<span style="font-size:16px;font-weight:700">/month</span></div>
+    <div class="modal-price-sub">Cancel anytime · Instant activation</div>
+    <div class="modal-features">
+      <div class="modal-feature pro-feat"><span class="feat-icon">✅</span>Unlimited daily quizzes<span class="feat-label pro-lbl">PRO</span></div>
+      <div class="modal-feature pro-feat"><span class="feat-icon">📚</span>Error Bank — review wrong answers<span class="feat-label pro-lbl">PRO</span></div>
+      <div class="modal-feature pro-feat"><span class="feat-icon">🎯</span>Practice Uncorrected Errors<span class="feat-label pro-lbl">PRO</span></div>
+      <div class="modal-feature pro-feat"><span class="feat-icon">📊</span>Full progress tracking<span class="feat-label pro-lbl">PRO</span></div>
+      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>2 quizzes per day<span class="feat-label free-lbl">FREE</span></div>
+      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>1 Error Bank session per day<span class="feat-label free-lbl">FREE</span></div>
+      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>P3–P6 all subjects<span class="feat-label free-lbl">FREE</span></div>
+    </div>
+    <button class="btn-stripe" onclick="goSubscribe()">💳 Subscribe via Stripe — S$30/mo</button>
+    <div class="modal-or">— already have a code? —</div>
+    <button class="btn-code-unlock" onclick="activatePremium()">Already paid? Enter your email →</button>
+  </div>
+</div>
+<div class="confetti" id="confetti"></div>
+<script>
+// ═══════════════════════════════════════════════════
+//  CONFIG — paste your Google Sheet CSV URL here
+// ═══════════════════════════════════════════════════
+const CONFIG = {
+  sheetCsvUrl: 'https://docs.google.com/spreadsheets/d/1vGTX5iX9B0mwVP5JWKoH5dvX1EIAUU0gygrG29vuQQA/export?format=csv',
+  stripeUrl: 'https://buy.stripe.com/bJe00bgPMabp9ev5yCdQQ02',
+  premiumCode: 'SGQUIZ2024',                           // ← access code for manual Pro unlock
+  feedbackEmail: 'zhur02@gmail.com',
+  formspreeId: 'xkopgzpd',           // ← paste Formspree ID here after setup
+  proUsersSheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_KeudWzupkwotwhGlzlgWEmfvtrP47wdk3r92FRepdduiHGup-0oNkYVggq2-Tdb3hKZeBuIJ2IHx/pub?gid=0&single=true&output=csv',
+  stripeUrl: 'https://buy.stripe.com/bJe00bgPMabp9ev5yCdQQ02',
+  FREE_DAILY_LIMIT: 2,
+  FREE_EB_DAILY_LIMIT: 1
+};
+
+// ═══════════════════════════════════════════════════
+//  TOPIC METADATA
+// ═══════════════════════════════════════════════════
+const SUBJECT_META = {
+  'Mathematics':     {icon:'🔢', color:'#1460b0', cls:'subj-math'},
+  'English Language':{icon:'📖', color:'#c94b0a', cls:'subj-english'},
+  'Science':         {icon:'🔬', color:'#0e8a7a', cls:'subj-science'},
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let allQuestions = [];
+let state = {
+  user: null,
+  level: null,
+  subject: null,
+  diff: null,
+  selectedTopics: [],
+  questionCount: 10,
+  quizQuestions: [],
+  currentIndex: 0,
+  score: 0,
+  answers: [],
+  isErrorBankMode: false,
+  ebFilter: 'all'
+};
+
+// ═══════════════════════════════════════════════════
+//  STORAGE HELPERS
+// ═══════════════════════════════════════════════════
+function getUsers(){ try{ return JSON.parse(localStorage.getItem('sgq_users')||'{}'); }catch(e){return {};} }
+function saveUsers(u){ localStorage.setItem('sgq_users',JSON.stringify(u)); }
+function getEB(user){ try{ return JSON.parse(localStorage.getItem('sgq_eb_'+user)||'{}'); }catch(e){return {};} }
+function saveEB(user,eb){ localStorage.setItem('sgq_eb_'+user,JSON.stringify(eb)); }
+function getSession(){ return localStorage.getItem('sgq_session'); }
+function setSession(u){ localStorage.setItem('sgq_session',u); }
+function clearSession(){ localStorage.removeItem('sgq_session'); }
+function isPremium(user){
+  const u = getUsers()[user];
+  return u && u.premium === true;
+}
+
+// ─── DAILY QUOTA ───────────────────────────────────
+function getTodayKey(){ return 'sgq_daily_' + new Date().toISOString().slice(0,10); }
+function getDailyCount(user){
+  try{ return JSON.parse(localStorage.getItem(getTodayKey()+'_'+user)||'0'); }catch(e){ return 0; }
+}
+function getDailyEBCount(user){
+  try{ return JSON.parse(localStorage.getItem(getTodayKey()+'_eb_'+user)||'0'); }catch(e){ return 0; }
+}
+function incDailyCount(user){
+  localStorage.setItem(getTodayKey()+'_'+user, getDailyCount(user)+1);
+}
+function incDailyEBCount(user){
+  localStorage.setItem(getTodayKey()+'_eb_'+user, getDailyEBCount(user)+1);
+}
+function canStartQuiz(user){
+  if(isPremium(user)) return true;
+  return getDailyCount(user) < CONFIG.FREE_DAILY_LIMIT;
+}
+function canStartEB(user){
+  if(isPremium(user)) return true;
+  return getDailyEBCount(user) < CONFIG.FREE_EB_DAILY_LIMIT;
+}
+function updateDailyBanner(){
+  const banner = document.getElementById('daily-banner');
+  const usedEl = document.getElementById('daily-used');
+  if(!state.user){ banner.style.display='none'; return; }
+  if(isPremium(state.user)){ banner.style.display='none'; return; }
+  const used = getDailyCount(state.user);
+  const usedEB = getDailyEBCount(state.user);
+  usedEl.textContent = `${used}/${CONFIG.FREE_DAILY_LIMIT} quizzes · ${usedEB}/${CONFIG.FREE_EB_DAILY_LIMIT} Error Bank`;
+  banner.style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════
+//  CSV PARSER
+// ═══════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = parseCSVRow(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = parseCSVRow(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h.trim()] = (vals[idx] || '').trim(); });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function parseCSVRow(line) {
+  const result = [];
+  let inQuote = false, cur = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQuote = !inQuote; }
+    else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ═══════════════════════════════════════════════════
+//  DATA LOADING
+// ═══════════════════════════════════════════════════
+
+function getPubHtmlUrl() {
+  if (!CONFIG.sheetCsvUrl) return null;
+  return CONFIG.sheetCsvUrl.replace('pub?output=csv', 'pubhtml').replace(/&output=csv.*/, '');
+}
+
+function parseHtmlTable(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = Array.from(doc.querySelectorAll('table tr'));
+  if (rows.length < 2) return [];
+  const headers = Array.from(rows[0].querySelectorAll('td,th')).map(c => c.textContent.trim());
+  const result = [];
+  for (let i = 1; i < rows.length; i++) {
+    const cells = Array.from(rows[i].querySelectorAll('td,th')).map(c => c.textContent.trim());
+    if (cells.every(c => !c)) continue;
+    const obj = {};
+    headers.forEach((h, idx) => { if (h) obj[h] = cells[idx] || ''; });
+    result.push(obj);
+  }
+  return result;
+}
+
+async function tryFetch(url) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.text();
+}
+
+async function loadData() {
+  const statusEl = document.getElementById('data-status');
+
+  if (EMBEDDED_QUESTIONS.length > 0) {
+    allQuestions = EMBEDDED_QUESTIONS;
+    statusEl.innerHTML = '';
+    console.log('✅ Using', allQuestions.length, 'embedded questions.');
+    return;
+  }
+
+  if (!CONFIG.sheetCsvUrl) {
+    statusEl.innerHTML = '<div class="setup-banner">📋 No question bank connected yet. Paste your Google Sheet CSV URL into <code>CONFIG.sheetCsvUrl</code>.</div>';
+    return;
+  }
+
+  statusEl.innerHTML = '<div class="loading-wrap"><div class="loading-spinner"></div><div class="loading-text">Loading questions…</div></div>';
+
+  const csvUrl  = CONFIG.sheetCsvUrl;
+  const htmlUrl = getPubHtmlUrl();
+  const enc     = encodeURIComponent(csvUrl);
+  const encHtml = encodeURIComponent(htmlUrl);
+
+  // Strategy A – CSV via proxies
+  const csvStrategies = [
+    { label: 'direct CSV',     url: csvUrl },
+    { label: 'corsproxy CSV',  url: 'https://corsproxy.io/?' + enc },
+    { label: 'allorigins CSV', url: 'https://api.allorigins.win/raw?url=' + enc },
+    { label: 'codetabs CSV',   url: 'https://api.codetabs.com/v1/proxy?quest=' + enc },
+  ];
+  for (const s of csvStrategies) {
+    try {
+      console.log('⏳ Trying', s.label);
+      const text   = await tryFetch(s.url);
+      const parsed = parseCSV(text);
+      if (parsed.length > 0 && parsed[0].question) {
+        allQuestions = parsed;
+        statusEl.innerHTML = '';
+        console.log('✅ Loaded', allQuestions.length, 'questions via', s.label);
+        return;
+      }
+    } catch(e) { console.warn(s.label, 'failed:', e.message); }
+  }
+
+  // Strategy B – pubhtml page parsed as HTML table
+  if (htmlUrl) {
+    const htmlStrategies = [
+      { label: 'direct pubhtml',     url: htmlUrl },
+      { label: 'corsproxy pubhtml',  url: 'https://corsproxy.io/?' + encHtml },
+      { label: 'allorigins pubhtml', url: 'https://api.allorigins.win/raw?url=' + encHtml },
+    ];
+    for (const s of htmlStrategies) {
+      try {
+        console.log('⏳ Trying', s.label);
+        const text   = await tryFetch(s.url);
+        const parsed = parseHtmlTable(text);
+        if (parsed.length > 0 && parsed[0].question) {
+          allQuestions = parsed;
+          statusEl.innerHTML = '';
+          console.log('✅ Loaded', allQuestions.length, 'questions via', s.label);
+          return;
+        }
+      } catch(e) { console.warn(s.label, 'failed:', e.message); }
+    }
+  }
+
+  // Strategy C – allorigins JSON wrapper
+  try {
+    console.log('⏳ Trying allorigins JSON wrapper');
+    const res  = await fetch('https://api.allorigins.win/get?url=' + enc, { signal: AbortSignal.timeout(7000) });
+    const json = await res.json();
+    if (json && json.contents) {
+      const parsed = parseCSV(json.contents);
+      if (parsed.length > 0 && parsed[0].question) {
+        allQuestions = parsed;
+        statusEl.innerHTML = '';
+        console.log('✅ Loaded', allQuestions.length, 'questions via allorigins JSON');
+        return;
+      }
+    }
+  } catch(e) { console.warn('allorigins JSON failed:', e.message); }
+
+  allQuestions = [];
+  statusEl.innerHTML = `<div class="setup-banner">
+    ⚠️ Could not load questions from Google Sheet (network or CORS error).<br>
+    Make sure the sheet is published: <strong>File → Share → Publish to web → CSV</strong>.<br>
+    <a href="${htmlUrl || '#'}" target="_blank" rel="noopener" style="color:var(--accent2)">Open sheet ↗</a>
+    &nbsp;·&nbsp;
+    <a href="#" onclick="loadData()" style="color:var(--accent2)">Retry</a>
+  </div>`;
+}
+
+function getTopicsForSelection() {
+  const qs = allQuestions.filter(q =>
+    q.level === state.level &&
+    q.subject === state.subject &&
+    (state.diff === 'all' || q.difficulty === state.diff)
+  );
+  const topicMap = {};
+  qs.forEach(q => {
+    if (!topicMap[q.topic]) topicMap[q.topic] = 0;
+    topicMap[q.topic]++;
+  });
+  return topicMap;
+}
+
+function getQuestionsForQuiz() {
+  let pool = allQuestions.filter(q =>
+    q.level === state.level && q.subject === state.subject
+  );
+  shuffle(pool);
+  return pool.slice(0, state.questionCount);
+}
+
+// ═══════════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════════
+const AVATAR_COLORS = ['#c94b0a','#1460b0','#0e8a7a','#7b35c4','#1a9456','#d08800','#c42b2b'];
+
+function renderLoginChips() {
+  const users = getUsers();
+  const names = Object.keys(users);
+  const container = document.getElementById('existing-chips');
+  const form = document.getElementById('new-user-form');
+  if (names.length === 0) {
+    container.innerHTML = '';
+    form.style.display = 'block';
+    return;
+  }
+  let html = '<div class="user-chips">';
+  names.forEach((name, i) => {
+    const u = users[name];
+    const col = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    const prem = u.premium ? ' ⭐' : '';
+    html += `<div class="user-chip" onclick="enterApp('${name.replace(/'/g,"\\'")}')">
+      <div class="user-avatar" style="background:${col}">${name[0].toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${name}${prem}</div>
+        <div class="user-stats">${u.quizCount||0} quizzes · ${u.totalCorrect||0} correct</div>
+      </div>
+      <button class="user-chip-del" onclick="deleteUser(event,'${name.replace(/'/g,"\\'")}')">✕</button>
+      <span style="font-size:18px">→</span>
+    </div>`;
+  });
+  html += '</div>';
+  html += '<div class="login-divider">or add new user</div>';
+  container.innerHTML = html;
+  form.style.display = 'block';
+}
+
+function deleteUser(e, name) {
+  e.stopPropagation();
+  if (!confirm(`Remove ${name}?`)) return;
+  const users = getUsers();
+  delete users[name];
+  saveUsers(users);
+  if (getSession() === name) clearSession();
+  renderLoginChips();
+}
+
+function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const err = document.getElementById('login-err');
+  if (!name) { err.textContent = 'Please enter your name.'; return; }
+  if (name.length < 2) { err.textContent = 'Name must be at least 2 characters.'; return; }
+  err.textContent = '';
+  const users = getUsers();
+  if (!users[name]) users[name] = {quizCount:0, totalCorrect:0, premium:false};
+  saveUsers(users);
+  enterApp(name);
+}
+
+function enterApp(name) {
+  state.user = name;
+  setSession(name);
+  document.getElementById('header-user').style.display = 'flex';
+  document.getElementById('header-username').textContent = name;
+  const users = getUsers();
+  const i = Object.keys(users).indexOf(name) % AVATAR_COLORS.length;
+  document.getElementById('header-avatar').style.background = AVATAR_COLORS[Math.max(0,i)];
+  document.getElementById('header-avatar').textContent = name[0].toUpperCase();
+  // Update plan chip
+  const chip = document.getElementById('header-plan-chip');
+  if (isPremium(name)) {
+    chip.textContent = '⭐ PRO';
+    chip.className = 'plan-chip pro';
+  } else {
+    chip.textContent = 'FREE';
+    chip.className = 'plan-chip free';
+  }
+  updateDailyBanner();
+  renderEB();
+}
+
+function logout() {
+  clearSession();
+  state.user = null;
+  document.getElementById('header-user').style.display = 'none';
+  // Simply reload to restart cleanly
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function pickLevel(level) {
+  state.level = level;
+  var grid = document.getElementById('subject-grid');
+  document.getElementById('subject-label').textContent = level + ' — Choose Subject';
+  grid.innerHTML = '';
+  var seen = {};
+  for (var i = 0; i < allQuestions.length; i++) {
+    var q = allQuestions[i];
+    if (q.level === level) {
+      seen[q.subject] = (seen[q.subject] || 0) + 1;
+    }
+  }
+  var subjects = Object.keys(seen).sort();
+  if (subjects.length === 0) {
+    grid.innerHTML = '<p style="color:#c42b2b;font-weight:700;padding:16px">No questions found for ' + level + ' (loaded: ' + allQuestions.length + ')</p>';
+    showScreen('s-subject');
+    return;
+  }
+  for (var j = 0; j < subjects.length; j++) {
+    var subj = subjects[j];
+    var meta = SUBJECT_META[subj] || {icon:'📚', color:'#888', cls:''};
+    var div = document.createElement('div');
+    div.className = 'sel-card ' + (meta.cls || '');
+    div.style.setProperty('--tc', meta.color);
+    div.setAttribute('onclick', "pickSubject('" + subj + "')");
+    div.innerHTML = '<div class="sel-icon">' + meta.icon + '</div>' +
+      '<div class="sel-title">' + subj + '</div>' +
+      '<div class="sel-sub">' + seen[subj] + ' questions</div>';
+    grid.appendChild(div);
+  }
+  showScreen('s-subject');
+}
+
+function pickSubject(subj) {
+  state.subject = subj;
+  state.diff = 'all';
+  var topicMap = getTopicsForSelection();
+  state.selectedTopics = Object.keys(topicMap);
+  startQuiz(false);
+}
+
+function pickDiff(diff) {
+  state.diff = diff;
+  // Auto-select ALL topics for the chosen level/subject/difficulty
+  var topicMap = getTopicsForSelection();
+  state.selectedTopics = Object.keys(topicMap);
+  startQuiz(false);
+}
+
+
+
+
+function startQuiz(ebMode) {
+  // Daily limit check (free users only)
+  if (!isPremium(state.user)) {
+    if (ebMode && !canStartEB(state.user)) {
+      showScreen('s-home');
+      const used = getDailyEBCount(state.user);
+      const existingOverlay = document.getElementById('limit-overlay-home');
+      if (!existingOverlay) {
+        const overlay = document.createElement('div');
+        overlay.id = 'limit-overlay-home';
+        overlay.className = 'limit-overlay';
+        overlay.innerHTML = `<div class="limit-emoji">⏸️</div>
+          <div class="limit-title">Error Bank limit reached</div>
+          <div class="limit-sub">You've used your ${CONFIG.FREE_EB_DAILY_LIMIT} free Error Bank session today. Resets at midnight, or upgrade to Pro for unlimited access.</div>
+          <button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button>
+          <button class="btn-secondary" onclick="document.getElementById('limit-overlay-home').remove()">OK, come back tomorrow</button>`;
+        document.querySelector('#s-home .home-layout').prepend(overlay);
+      }
+      return;
+    }
+    if (!ebMode && !canStartQuiz(state.user)) {
+      showScreen('s-home');
+      const used = getDailyCount(state.user);
+      const existingOverlay = document.getElementById('limit-overlay-home');
+      if (!existingOverlay) {
+        const overlay = document.createElement('div');
+        overlay.id = 'limit-overlay-home';
+        overlay.className = 'limit-overlay';
+        overlay.innerHTML = `<div class="limit-emoji">⏸️</div>
+          <div class="limit-title">Daily quiz limit reached</div>
+          <div class="limit-sub">You've completed ${used} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today. Resets at midnight, or upgrade to Pro for unlimited practice.</div>
+          <button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button>
+          <button class="btn-secondary" onclick="document.getElementById('limit-overlay-home').remove()">OK, come back tomorrow</button>`;
+        document.querySelector('#s-home .home-layout').prepend(overlay);
+      }
+      return;
+    }
+  }
+
+  state.isErrorBankMode = ebMode;
+  if (ebMode) {
+    const eb = getEB(state.user);
+    const filter = state.ebFilter || 'all';
+    let keys = Object.keys(eb).filter(k => !eb[k].mastered);
+    if (filter === 'uncorrected') {
+      keys = keys.filter(k => eb[k].ebAttempted && !eb[k].mastered);
+      if (keys.length === 0) { alert('No uncorrected errors yet! Complete an Error Bank practice first, then come back to drill the ones you still got wrong.'); return; }
+    } else {
+      if (keys.length === 0) { alert('No errors to practise! Keep doing quizzes to build your Error Bank.'); return; }
+    }
+    state.quizQuestions = keys.map(k => {
+      const item = eb[k];
+      const found = allQuestions.find(q =>
+        q.question === item.question && q.subject === item.subject
+      );
+      return found ? { ...found, _ebKey: k } : null;
+    }).filter(Boolean);
+    shuffle(state.quizQuestions);
+    state.quizQuestions = state.quizQuestions.slice(0, state.questionCount || 10);
+    const ebNow = getEB(state.user);
+    state.quizQuestions.forEach(q => {
+      if (q._ebKey && ebNow[q._ebKey]) ebNow[q._ebKey].ebAttempted = true;
+    });
+    saveEB(state.user, ebNow);
+  } else {
+    if (state.selectedTopics.length === 0) { alert('Please select at least one topic.'); return; }
+    state.quizQuestions = getQuestionsForQuiz();
+    if (state.quizQuestions.length === 0) {
+      alert('No questions found for your selection. Try selecting a different level or subject.');
+      return;
+    }
+  }
+  // Count this session for free users
+  if (!isPremium(state.user)) {
+    if (ebMode) incDailyEBCount(state.user);
+    else incDailyCount(state.user);
+  }
+  updateDailyBanner();
+
+  state.currentIndex = 0;
+  state.score = 0;
+  state.answers = [];
+  showScreen('s-quiz');
+  document.getElementById('quiz-mode-tag').textContent = ebMode ? '📚 Error Bank' : 'Quiz';
+  document.getElementById('quiz-mode-tag').className = 'quiz-mode-tag ' + (ebMode ? 'errorbank' : 'normal');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = state.quizQuestions[state.currentIndex];
+  const tot = state.quizQuestions.length;
+  const pct = Math.round((state.currentIndex / tot) * 100);
+  document.getElementById('q-counter').textContent = `Q ${state.currentIndex+1} / ${tot}`;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('q-num-lbl').textContent = `Question ${state.currentIndex+1}`;
+  document.getElementById('q-text').textContent = q.question;
+  document.getElementById('live-score').textContent = `${state.score}/${state.currentIndex}`;
+  const meta = SUBJECT_META[q.subject] || {color:'#888'};
+  document.getElementById('q-pill').textContent = q.topic;
+  document.getElementById('q-pill').style.background = meta.color;
+  document.getElementById('feedback').className = 'feedback-box';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('btn-next').className = 'btn-next';
+
+  // Build options grid — shuffle so correct answer lands in a random slot
+  const origOpts = [q.option_a, q.option_b, q.option_c, q.option_d];
+  const origCorrectIdx = ['A','B','C','D'].indexOf(q.correct_answer.trim().toUpperCase());
+  const correctText = origOpts[origCorrectIdx];
+  const shuffleIdx = [0,1,2,3]; shuffle(shuffleIdx);
+  const opts = shuffleIdx.map(i => origOpts[i]);
+  const correctIdx = opts.indexOf(correctText);
+  const body = document.getElementById('q-body');
+  body.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'options-grid';
+  opts.forEach((opt, i) => {
+    if (!opt) return;
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="opt-letter">${'ABCD'[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectOption(i, correctIdx, grid, q);
+    grid.appendChild(btn);
+  });
+  body.appendChild(grid);
+}
+
+function selectOption(idx, correctIdx, grid, q) {
+  const btns = grid.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  const ok = idx === correctIdx;
+  btns[idx].classList.add(ok ? 'correct' : 'wrong');
+  if (!ok && correctIdx < btns.length) btns[correctIdx].classList.add('correct');
+  const correctText = btns[correctIdx].querySelector('span:last-child').textContent;
+  showFeedback(ok, q.explanation, ok ? null : correctText);
+  recordAnswer(ok, q);
+}
+
+function showFeedback(ok, exp, ca) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback-box show ' + (ok ? 'correct' : 'wrong');
+  let h = `<strong>${ok ? '✅ Correct! Well done!' : '❌ Incorrect.'}</strong>`;
+  if (!ok && ca) h += ` Correct answer: <strong>${ca}</strong>.`;
+  h += `<div class="explanation">💡 ${exp}</div>`;
+  fb.innerHTML = h;
+  const btn = document.getElementById('btn-next');
+  btn.textContent = state.currentIndex < state.quizQuestions.length - 1 ? 'Next Question →' : 'See Results →';
+  btn.className = 'btn-next show';
+}
+
+function recordAnswer(ok, q) {
+  if (ok) {
+    state.score++;
+    if (state.isErrorBankMode) {
+      const eb = getEB(state.user);
+      const k = q.question.slice(0,60) + q.subject;
+      if (eb[k]) { eb[k].mastered = true; saveEB(state.user, eb); }
+    }
+  } else {
+    addToEB(q);
+  }
+  state.answers.push({q, ok});
+}
+
+function addToEB(q) {
+  const eb = getEB(state.user);
+  const k = q.question.slice(0,60) + q.subject;
+  if (!eb[k]) {
+    eb[k] = {
+      question: q.question,
+      subject: q.subject,
+      level: q.level,
+      topic: q.topic,
+      correct_answer: q.correct_answer,
+      explanation: q.explanation,
+      option_a: q.option_a, option_b: q.option_b,
+      option_c: q.option_c, option_d: q.option_d,
+      mastered: false,
+      addedAt: Date.now()
+    };
+  }
+  saveEB(state.user, eb);
+  renderEB();
+}
+
+function nextQuestion() {
+  state.currentIndex++;
+  if (state.currentIndex >= state.quizQuestions.length) { showResults(); return; }
+  renderQuestion();
+}
+
+function confirmQuit() {
+  if (confirm('Quit quiz? Your wrong answers will be saved to the Error Bank.')) showScreen('s-home');
+}
+
+// ═══════════════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════════════
+function showResults() {
+  showScreen('s-results');
+  const tot = state.quizQuestions.length;
+  const pct = Math.round((state.score / tot) * 100);
+  document.getElementById('res-score').textContent = state.score;
+  document.getElementById('res-total').textContent = `out of ${tot} correct`;
+  document.getElementById('st-c').textContent = state.score;
+  document.getElementById('st-w').textContent = tot - state.score;
+  document.getElementById('st-p').textContent = pct + '%';
+  let emoji, title, msg;
+  if (pct >= 90){ emoji='🏆'; title='Outstanding!'; msg="Excellent work — you've mastered these topics!"; confettiShow(); }
+  else if (pct >= 70){ emoji='🎉'; title='Great Job!'; msg="Well done! Review the incorrect questions and try again."; }
+  else if (pct >= 50){ emoji='📚'; title='Good Effort!'; msg="You're getting there — focus on the topics in your Error Bank."; }
+  else { emoji='💪'; title='Keep Practising!'; msg="Read the explanations carefully, then use Error Bank to practise your mistakes."; }
+  document.getElementById('res-emoji').textContent = emoji;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-msg').textContent = msg;
+  const wrongCount = state.answers.filter(a => !a.ok).length;
+  document.getElementById('eb-res-note').innerHTML = wrongCount > 0
+    ? `<div class="eb-saved-note">📚 ${wrongCount} incorrect question${wrongCount>1?'s':''} saved to your Error Bank.</div>` : '';
+  document.getElementById('res-practice-eb-btn').style.display = wrongCount > 0 ? 'inline-flex' : 'none';
+
+  // Update user stats
+  const users = getUsers();
+  if (users[state.user]) {
+    users[state.user].quizCount = (users[state.user].quizCount || 0) + 1;
+    users[state.user].totalCorrect = (users[state.user].totalCorrect || 0) + state.score;
+    saveUsers(users);
+  }
+
+  // Review list
+  const list = document.getElementById('review-list');
+  list.innerHTML = '';
+  state.answers.forEach((a, i) => {
+    const item = document.createElement('div');
+    item.className = 'review-item ' + (a.ok ? 'ri-correct' : 'ri-wrong');
+    const meta = SUBJECT_META[a.q.subject] || {};
+    const opts = [a.q.option_a, a.q.option_b, a.q.option_c, a.q.option_d];
+    const cidx = ['A','B','C','D'].indexOf(a.q.correct_answer.trim().toUpperCase());
+    const correctText = opts[cidx] || a.q.correct_answer;
+    const ansLine = a.ok
+      ? `<span class="ri-ans">✅ Correct</span>`
+      : `<span class="ri-ans">❌ Correct answer: <span class="ca">${correctText}</span></span>`;
+    item.innerHTML = `<div class="ri-q"><strong>Q${i+1}</strong> [${a.q.topic}]: ${a.q.question}</div>${ansLine}<div class="ri-exp">💡 ${a.q.explanation}</div>`;
+    list.appendChild(item);
+  });
+  renderEB();
+}
+
+function goHomeEB() { showScreen('s-home'); setTimeout(() => practiceEB(), 300); }
+
+function moreQuizSameSubject() {
+  if (!isPremium(state.user) && !canStartQuiz(state.user)) {
+    showScreen('s-home');
+    const existing = document.getElementById('limit-overlay-home');
+    if (existing) existing.remove();
+    const ov = document.createElement('div');
+    ov.id = 'limit-overlay-home'; ov.className = 'limit-overlay';
+    ov.innerHTML = `<div class="limit-emoji">⏸️</div>
+      <div class="limit-title">Daily quiz limit reached</div>
+      <div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today.</div>
+      <button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button>
+      <button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
+    document.querySelector('#s-home .home-layout').prepend(ov);
+    return;
+  }
+  // Fresh random draw, avoiding just-answered questions where possible
+  const justAnswered = new Set(state.answers.map(a => a.q.question));
+  let pool = allQuestions.filter(q =>
+    q.level === state.level && q.subject === state.subject && !justAnswered.has(q.question)
+  );
+  if (pool.length < state.questionCount) {
+    pool = allQuestions.filter(q => q.level === state.level && q.subject === state.subject);
+  }
+  shuffle(pool);
+  state.quizQuestions = pool.slice(0, state.questionCount);
+  if (state.quizQuestions.length === 0) { alert('No questions available for this subject.'); return; }
+  if (!isPremium(state.user)) incDailyCount(state.user);
+  updateDailyBanner();
+  state.currentIndex = 0; state.score = 0; state.answers = [];
+  state.isErrorBankMode = false;
+  document.getElementById('quiz-mode-tag').textContent = 'Quiz';
+  document.getElementById('quiz-mode-tag').className = 'quiz-mode-tag normal';
+  showScreen('s-quiz'); renderQuestion();
+}
+
+// ═══════════════════════════════════════════════════
+//  ERROR BANK
+// ═══════════════════════════════════════════════════
+function renderEB() {
+  const body = document.getElementById('eb-sidebar-body');
+  const chipEl = document.getElementById('eb-chip');
+
+  // Free users see a locked state
+  if (!isPremium(state.user)) {
+    chipEl.textContent = '🔒';
+    body.innerHTML = `<div class="eb-locked">
+      <div class="eb-locked-icon">🔒</div>
+      <div class="eb-locked-title">Error Bank — Pro Feature</div>
+      <div class="eb-locked-sub">Wrong answers are saved here so you can drill your weak spots. Upgrade to Pro to access.</div>
+      <button class="btn-upgrade-inline" onclick="showUpgradeModal()">⭐ Upgrade to Pro</button>
+    </div>`;
+    return;
+  }
+
+  const eb = getEB(state.user);
+  const keys = Object.keys(eb);
+  const unresolved = keys.filter(k => !eb[k].mastered);
+  const mastered = keys.filter(k => eb[k].mastered);
+  const uncorrected = unresolved.filter(k => eb[k].ebAttempted && !eb[k].mastered);
+  chipEl.textContent = unresolved.length;
+
+  if (keys.length === 0) {
+    body.innerHTML = `<div class="eb-empty-mini">
+      <div class="eb-empty-mini-icon">✨</div>
+      <div class="eb-empty-mini-text">Error Bank is empty</div>
+      <div class="eb-empty-mini-sub">Wrong answers will appear here for targeted review.</div>
+    </div>`;
+    return;
+  }
+
+  const stats = `<div class="eb-mini-stats">
+    <div class="eb-mini-stat"><div class="eb-mini-stat-num" style="color:var(--red)">${unresolved.length}</div><div class="eb-mini-stat-lbl">To review</div></div>
+    <div class="eb-mini-stat"><div class="eb-mini-stat-num" style="color:var(--amber)">${uncorrected.length}</div><div class="eb-mini-stat-lbl">Uncorrected</div></div>
+    <div class="eb-mini-stat"><div class="eb-mini-stat-num" style="color:var(--green)">${mastered.length}</div><div class="eb-mini-stat-lbl">Mastered</div></div>
+  </div>`;
+
+  let items = '<div class="eb-mini-list">';
+  unresolved.slice(0, 6).forEach(k => {
+    const item = eb[k];
+    items += `<div class="eb-mini-item">
+      <div class="eb-mini-item-topic">${item.level} · ${item.subject} · ${item.topic}</div>
+      <div class="eb-mini-item-q">${item.question}</div>
+      <div class="eb-mini-item-ans">✓ ${['A','B','C','D'].indexOf(item.correct_answer.trim().toUpperCase()) >= 0 ?
+        [item.option_a,item.option_b,item.option_c,item.option_d][['A','B','C','D'].indexOf(item.correct_answer.trim().toUpperCase())] : item.correct_answer}</div>
+      <button class="eb-mini-remove" onclick="removeEB('${k.replace(/'/g,"\\'")}')">✕</button>
+    </div>`;
+  });
+  if (unresolved.length > 6) items += `<div style="font-size:11px;color:var(--ink2);text-align:center;padding:6px;font-weight:700;">+${unresolved.length-6} more…</div>`;
+  items += '</div>';
+
+  const actions = `<div class="eb-mini-actions">
+    <button class="btn-practice-eb" onclick="practiceEB()" ${unresolved.length===0?'disabled':''}>
+      📚 Practice All Errors (${unresolved.length})
+    </button>
+    <button class="btn-practice-eb" style="background:var(--amber)" onclick="practiceEBUncorrected()" ${uncorrected.length===0?'disabled':''}>
+      🎯 Practice Uncorrected (${uncorrected.length})
+    </button>
+    <button class="btn-clear-eb" onclick="clearEB()">Clear All</button>
+  </div>`;
+
+  body.innerHTML = stats + items + actions;
+}
+
+function removeEB(k) {
+  const eb = getEB(state.user);
+  delete eb[k];
+  saveEB(state.user, eb);
+  renderEB();
+}
+
+function clearEB() {
+  if (!confirm('Clear all Error Bank items?')) return;
+  saveEB(state.user, {});
+  renderEB();
+}
+
+function practiceEB() {
+  state.questionCount = 15;
+  state.ebFilter = 'all';
+  startQuiz(true);
+}
+
+function practiceEBUncorrected() {
+  state.questionCount = 15;
+  state.ebFilter = 'uncorrected';
+  startQuiz(true);
+}
+
+// ═══════════════════════════════════════════════════
+//  PRO UPGRADE MODAL
+// ═══════════════════════════════════════════════════
+function showUpgradeModal() {
+  document.getElementById('upgrade-modal').style.display = 'flex';
+}
+function closeUpgradeModal() {
+  document.getElementById('upgrade-modal').style.display = 'none';
+}
+
+function goSubscribe() {
+  if (CONFIG.stripeUrl && CONFIG.stripeUrl !== 'https://buy.stripe.com/your-link-here') {
+    window.open(CONFIG.stripeUrl, '_blank');
+  } else {
+    alert('Stripe payment link not configured yet.\n\nTo set it up:\n1. Create a Stripe product at stripe.com\n2. Set price to S$30/month\n3. Copy the Payment Link URL\n4. Paste it into CONFIG.stripeUrl in this file.');
+  }
+}
+
+async function activatePremium() {
+  const email = prompt('Enter the email address you used to pay:');
+  if (!email) return;
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed.includes('@')) { alert('Please enter a valid email address.'); return; }
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px 40px;text-align:center;font-family:Nunito,sans-serif;max-width:300px"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:800;margin-bottom:6px">Checking your account…</div><div style="font-size:12px;color:#6a5c4f">This takes a few seconds</div></div>';
+  document.body.appendChild(ov);
+  const url = CONFIG.proUsersSheetUrl;
+  const enc = encodeURIComponent(url);
+  const strategies = [
+    async () => { const r=await fetch('https://corsproxy.io/?'+enc,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
+    async () => { const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+enc,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
+    async () => { const r=await fetch('https://api.allorigins.win/get?url='+enc,{signal:AbortSignal.timeout(10000)}); const j=await r.json(); return j.contents; },
+    async () => { const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(10000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
+    async () => { const r=await fetch(url,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
+  ];
+  let emailList=[], loaded=false;
+  for (let i=0; i<strategies.length; i++) {
+    try {
+      const text = await strategies[i]();
+      if (!text || text.length < 3) continue;
+      emailList = text.split('\n').flatMap(l=>l.split(',')).map(c=>c.replace(/"/g,'').trim().toLowerCase()).filter(c=>c.includes('@')&&c.includes('.'));
+      loaded=true; console.log('✅ Strategy',i+1,'| Emails:',emailList); break;
+    } catch(e) { console.warn('Strategy',i+1,'failed:',e.message); }
+  }
+  document.body.removeChild(ov);
+  if (!loaded) { alert('⚠️ Could not connect.\n\nCheck internet and try again, or email zhur02@gmail.com for manual unlock.'); return; }
+  if (emailList.includes(trimmed)) {
+    const users=getUsers(); if(users[state.user]){users[state.user].premium=true;saveUsers(users);}
+    closeUpgradeModal();
+    const chip=document.getElementById('header-plan-chip');
+    chip.textContent='⭐ PRO'; chip.className='plan-chip pro';
+    updateDailyBanner(); renderEB();
+    alert('⭐ Pro unlocked!\n\nUnlimited quizzes and full Error Bank access. Welcome to Pro!');
+  } else {
+    alert(`❌ Email not found (${emailList.length} email(s) in list).\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min then retry\n• Help? Email zhur02@gmail.com`);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  FEEDBACK SCREEN
+// ═══════════════════════════════════════════════════
+function showFeedbackScreen() {
+  document.getElementById('fb-success').style.display = 'none';
+  showScreen('s-feedback');
+}
+
+function submitFeedback() {
+  const type    = document.getElementById('fb-type').value;
+  const subject = document.getElementById('fb-subject').value.trim();
+  const message = document.getElementById('fb-message').value.trim();
+  const email   = document.getElementById('fb-email').value.trim();
+
+  if (!subject) { alert('Please enter a subject.'); return; }
+  if (!message) { alert('Please enter a message.'); return; }
+
+  const formId = CONFIG.formspreeId;
+  if (!formId || formId === 'YOUR_FORM_ID') {
+    alert('⚠️ Feedback not configured yet.\n\nPlease:\n1. Go to formspree.io\n2. Create a free form for zhur02@gmail.com\n3. Paste your form ID into CONFIG.formspreeId in this file.');
+    return;
+  }
+
+  const typeLabels = {
+    suggestion:'💡 Feature Suggestion', bug:'🐛 Bug Report',
+    question:'❓ Question / Content', compliment:'⭐ Compliment', other:'Other'
+  };
+
+  const submitBtn = document.querySelector('.fb-submit');
+  submitBtn.textContent = 'Sending…';
+  submitBtn.disabled = true;
+
+  fetch('https://formspree.io/f/' + formId, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      _subject: '[SG Study Quiz] ' + (typeLabels[type]||type) + ': ' + subject,
+      type: typeLabels[type] || type,
+      subject: subject,
+      message: message,
+      from_user: state.user || 'Unknown',
+      reply_to: email || '(not provided)'
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    submitBtn.textContent = 'Send Feedback →';
+    submitBtn.disabled = false;
+    if (data.ok) {
+      document.getElementById('fb-success').style.display = 'block';
+      document.getElementById('fb-subject').value = '';
+      document.getElementById('fb-message').value = '';
+      document.getElementById('fb-email').value = '';
+    } else {
+      alert('Could not send. Please email zhur02@gmail.com directly.');
+    }
+  })
+  .catch(() => {
+    submitBtn.textContent = 'Send Feedback →';
+    submitBtn.disabled = false;
+    alert('Network error. Please check your connection and try again.');
+  });
+}
+
+function showSetupHelp() {
+  alert('To connect your Google Sheet:\n\n1. Open your Google Sheet\n2. Click File → Share → Publish to web\n3. Choose the Questions sheet, format = CSV\n4. Click Publish and copy the URL\n5. Open this HTML file in a text editor\n6. Find CONFIG.sheetCsvUrl near the top\n7. Paste the URL between the quotes\n8. Save and reopen in your browser');
+}
+
+// ═══════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function confettiShow() {
+  const cols = ['#c94b0a','#1460b0','#1a9456','#d08800','#7b35c4'];
+  const c = document.getElementById('confetti'); c.innerHTML = '';
+  for (let i = 0; i < 70; i++) {
+    const d = document.createElement('div'); d.className = 'dot';
+    d.style.left = Math.random() * 100 + '%';
+    d.style.background = cols[Math.floor(Math.random() * 5)];
+    d.style.animationDelay = (Math.random() * 1.5) + 's';
+    d.style.animationDuration = (1.5 + Math.random()) + 's';
+    d.style.width = d.style.height = (5 + Math.random() * 8) + 'px';
+    c.appendChild(d);
+  }
+  setTimeout(() => c.innerHTML = '', 4500);
+}
+
+// ═══════════════════════════════════════════════════
+//  QUESTIONS — loaded from Google Sheet (see CONFIG.sheetCsvUrl)
+// ═══════════════════════════════════════════════════
+const EMBEDDED_QUESTIONS = [
+];
+
+
+// ═══════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════
+(async function boot() {
+  allQuestions = [];
+  // Enter app immediately so the screen is never blank
+  const DEFAULT_USER = 'Student';
+  const users = getUsers();
+  if (!users[DEFAULT_USER]) users[DEFAULT_USER] = {quizCount:0, totalCorrect:0, premium:false};
+  saveUsers(users);
+  const saved = getSession();
+  const name = (saved && users[saved]) ? saved : DEFAULT_USER;
+  enterApp(name);
+  // Load data in background
+  await loadData();
+})();
+</script>
+</body>
+</html>
