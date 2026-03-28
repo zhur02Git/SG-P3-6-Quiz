@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>SG Study Quiz · Primary School P3–P6</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -647,7 +644,8 @@ let state = {
   score: 0,
   answers: [],
   isErrorBankMode: false,
-  ebFilter: 'all'
+  ebFilter: 'all',
+  proConfirmed: false
 };
 
 // ═══════════════════════════════════════════════════
@@ -660,9 +658,12 @@ function saveEB(user,eb){ localStorage.setItem('sgq_eb_'+user,JSON.stringify(eb)
 function getSession(){ return localStorage.getItem('sgq_session'); }
 function setSession(u){ localStorage.setItem('sgq_session',u); }
 function clearSession(){ localStorage.removeItem('sgq_session'); }
+// ─── PRO STATUS: runtime flag, NOT localStorage ────
+// localStorage premium is only a hint — actual Pro status
+// is confirmed fresh from the sheet on every app load.
+// state.proConfirmed is set to true only after sheet verification.
 function isPremium(user){
-  const u = getUsers()[user];
-  return u && u.premium === true;
+  return state.proConfirmed === true;
 }
 
 function getProEmail(user){ return localStorage.getItem('sgq_pro_email_'+user)||''; }
@@ -694,52 +695,98 @@ async function fetchProRecords() {
         const cols=line.split(',').map(c=>c.replace(/"/g,'').trim());
         return{email:(cols[0]||'').toLowerCase(),expiry:(cols[1]||'').trim()};
       }).filter(r=>r.email.includes('@'));
-      console.log('✅ Pro sheet via strategy',i+1,records.length,'records');
+      console.log('✅ Pro sheet via strategy',i+1,'|',records.length,'records');
       return records;
     }catch(e){console.warn('Strategy',i+1,'failed:',e.message);}
   }
   return null;
 }
 
-function revokeProAccess(msg) {
-  const users=getUsers();
-  if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
-  clearProEmail(state.user);
+function applyProUI(){
+  state.proConfirmed=true;
+  const chip=document.getElementById('header-plan-chip');
+  if(chip){chip.textContent='⭐ PRO';chip.className='plan-chip pro';}
+  updateDailyBanner();renderEB();
+}
+
+function applyFreeUI(revoke){
+  state.proConfirmed=false;
+  if(revoke){
+    const users=getUsers();
+    if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
+    clearProEmail(state.user);
+  }
   const chip=document.getElementById('header-plan-chip');
   if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
-  updateDailyBanner();renderEB();showScreen('s-home');
-  setTimeout(()=>{alert('🔒 '+msg);showUpgradeModal();},200);
+  updateDailyBanner();renderEB();
 }
 
-// Runs on every app open — no stored email = revoke immediately
-async function verifyProOnLoad() {
-  if(!isPremium(state.user)) return;
+// Called on every app open — always verifies from sheet
+// Shows a brief "Verifying…" overlay so user can't bypass
+async function verifyProOnLoad(){
+  const hadPremium=getUsers()[state.user]&&getUsers()[state.user].premium;
   const proEmail=getProEmail(state.user);
+  if(!hadPremium&&!proEmail){
+    state.proConfirmed=false;
+    return; // free user — nothing to verify
+  }
+
+  // Show verification overlay — prevents using Pro UI before check completes
+  const ov=document.createElement('div');
+  ov.id='pro-verify-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(255,253,248,.95);z-index:8888;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML='<div style="text-align:center;font-family:Nunito,sans-serif"><div style="font-size:32px;margin-bottom:12px">🔍</div><div style="font-size:14px;font-weight:800;color:#17120e">Verifying subscription…</div></div>';
+  document.body.appendChild(ov);
+
+  const removeOv=()=>{const el=document.getElementById('pro-verify-overlay');if(el)el.remove();};
+
   if(!proEmail){
-    // No email stored = old unlock before email tracking — must re-verify
-    revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.');
+    // Had premium in localStorage but no email stored = old unlock, must re-verify
+    removeOv();
+    applyFreeUI(true);
+    setTimeout(()=>{
+      alert('Please re-enter your payment email to confirm your Pro subscription.');
+      showUpgradeModal();
+    },100);
     return;
   }
+
   const records=await fetchProRecords();
-  if(!records){console.warn('⚠️ Network error on load — keeping Pro');return;}
+  removeOv();
+
+  if(!records){
+    // All proxies failed — lock to be safe, show retry option
+    applyFreeUI(false); // don't wipe email — let them retry
+    alert('⚠️ Could not verify your subscription (network error).\n\nYou have been temporarily moved to Free.\n\nPlease check your connection and re-enter your email to restore Pro access.');
+    showUpgradeModal();
+    return;
+  }
+
   const today=new Date().toISOString().slice(0,10);
   const record=records.find(r=>r.email===proEmail);
-  if(!record){revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');}
-  else if(record.expiry&&record.expiry<today){revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);}
-  else{console.log('✅ Pro verified on load for',proEmail);}
+
+  if(!record){
+    applyFreeUI(true);
+    setTimeout(()=>{alert('🔒 Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');showUpgradeModal();},100);
+  } else if(record.expiry&&record.expiry<today){
+    applyFreeUI(true);
+    setTimeout(()=>{alert(`🔒 Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);showUpgradeModal();},100);
+  } else {
+    applyProUI();
+    console.log('✅ Pro verified on load for',proEmail);
+  }
 }
 
-// Runs before every quiz start
-async function verifyProStatus() {
-  if(!isPremium(state.user)) return true;
+// Called before every quiz start
+async function verifyProStatus(){
   const proEmail=getProEmail(state.user);
-  if(!proEmail){revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.');return false;}
+  if(!proEmail){applyFreeUI(true);alert('Please re-enter your payment email to confirm your Pro subscription.');showUpgradeModal();return false;}
   const records=await fetchProRecords();
-  if(!records){console.warn('⚠️ Network error — allowing quiz');return true;}
+  if(!records){applyFreeUI(false);alert('⚠️ Could not verify subscription.\n\nPlease check your connection and try again.');return false;}
   const today=new Date().toISOString().slice(0,10);
   const record=records.find(r=>r.email===proEmail);
-  if(!record){revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');return false;}
-  if(record.expiry&&record.expiry<today){revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew.`);return false;}
+  if(!record){applyFreeUI(true);setTimeout(()=>{alert('🔒 Your Pro subscription has ended.');showUpgradeModal();},100);return false;}
+  if(record.expiry&&record.expiry<today){applyFreeUI(true);setTimeout(()=>{alert(`🔒 Subscription expired on ${record.expiry}.`);showUpgradeModal();},100);return false;}
   return true;
 }
 
@@ -945,8 +992,7 @@ function getTopicsForSelection() {
 
 function getQuestionsForQuiz() {
   let pool=allQuestions.filter(q=>q.level===state.level&&q.subject===state.subject&&isValidQuestion(q));
-  shuffle(pool);
-  return pool.slice(0,state.questionCount);
+  shuffle(pool);return pool.slice(0,state.questionCount);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1098,7 +1144,9 @@ function pickDiff(diff) {
 
 
 async function startQuiz(ebMode) {
-  if(isPremium(state.user)){const ok=await verifyProStatus();if(!ok)return;}
+  if(state.proConfirmed){
+    const ok=await verifyProStatus();if(!ok)return;
+  }
   // Daily limit check (free users only)
   if (!isPremium(state.user)) {
     if (ebMode && !canStartEB(state.user)) {
@@ -1353,11 +1401,11 @@ function showResults() {
 function goHomeEB(){showScreen('s-home');setTimeout(()=>practiceEB(),300);}
 
 function moreQuizSameSubject(){
-  if(!isPremium(state.user)&&!canStartQuiz(state.user)){
+  if(!state.proConfirmed&&!canStartQuiz(state.user)){
     showScreen('s-home');
     const ex=document.getElementById('limit-overlay-home');if(ex)ex.remove();
     const ov=document.createElement('div');ov.id='limit-overlay-home';ov.className='limit-overlay';
-    ov.innerHTML=`<div class="limit-emoji">⏸️</div><div class="limit-title">Daily quiz limit reached</div><div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today. Resets at midnight.</div><button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button><button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
+    ov.innerHTML=`<div class="limit-emoji">⏸️</div><div class="limit-title">Daily quiz limit reached</div><div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today.</div><button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button><button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
     document.querySelector('#s-home .home-layout').prepend(ov);return;
   }
   const justAnswered=new Set(state.answers.map(a=>a.q.question));
@@ -1365,7 +1413,7 @@ function moreQuizSameSubject(){
   if(pool.length<state.questionCount)pool=allQuestions.filter(q=>q.level===state.level&&q.subject===state.subject&&isValidQuestion(q));
   shuffle(pool);state.quizQuestions=pool.slice(0,state.questionCount);
   if(state.quizQuestions.length===0){alert('No questions available.');return;}
-  if(!isPremium(state.user))incDailyCount(state.user);
+  if(!state.proConfirmed)incDailyCount(state.user);
   updateDailyBanner();state.currentIndex=0;state.score=0;state.answers=[];state.isErrorBankMode=false;
   document.getElementById('quiz-mode-tag').textContent='Quiz';
   document.getElementById('quiz-mode-tag').className='quiz-mode-tag normal';
@@ -1501,8 +1549,7 @@ async function activatePremium(){
   const users=getUsers();if(users[state.user]){users[state.user].premium=true;saveUsers(users);}
   saveProEmail(state.user,trimmed);
   closeUpgradeModal();
-  const chip=document.getElementById('header-plan-chip');chip.textContent='⭐ PRO';chip.className='plan-chip pro';
-  updateDailyBanner();renderEB();
+  applyProUI();
   alert(`⭐ Pro unlocked!${record.expiry?'\nActive until: '+record.expiry:''}\n\nUnlimited quizzes and full Error Bank access.`);
 }
 
@@ -1579,6 +1626,7 @@ const EMBEDDED_QUESTIONS = [
 // ═══════════════════════════════════════════════════
 (async function boot() {
   allQuestions = [];
+  state.proConfirmed = false; // always start as Free — verified below
   const DEFAULT_USER = 'Student';
   const users = getUsers();
   if (!users[DEFAULT_USER]) users[DEFAULT_USER] = {quizCount:0, totalCorrect:0, premium:false};
@@ -1587,7 +1635,7 @@ const EMBEDDED_QUESTIONS = [
   const name = (saved && users[saved]) ? saved : DEFAULT_USER;
   enterApp(name);
   await loadData();
-  verifyProOnLoad();
+  await verifyProOnLoad(); // blocks until Pro status is confirmed or denied
 })();
 </script>
 </body>
