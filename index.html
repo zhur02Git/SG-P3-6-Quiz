@@ -669,14 +669,14 @@ function clearProEmail(user){ localStorage.removeItem('sgq_pro_email_'+user); }
 
 // ─── QUESTION QUALITY FILTER ───────────────────────
 function isValidQuestion(q) {
-  const opts = [q.option_a,q.option_b,q.option_c,q.option_d].map(o=>(o||'').trim().toLowerCase());
-  if (opts.some(o=>o==='')) return false;
-  if (new Set(opts).size < 4) return false;
-  if (['A','B','C','D'].indexOf((q.correct_answer||'').trim().toUpperCase()) < 0) return false;
+  const opts=[q.option_a,q.option_b,q.option_c,q.option_d].map(o=>(o||'').trim().toLowerCase());
+  if(opts.some(o=>o==='')) return false;
+  if(new Set(opts).size < 4) return false;
+  if(['A','B','C','D'].indexOf((q.correct_answer||'').trim().toUpperCase()) < 0) return false;
   return true;
 }
 
-// ─── PRO SHEET FETCH (used by activate + verify) ───
+// ─── PRO SHEET FETCH ───────────────────────────────
 async function fetchProRecords() {
   const url = CONFIG.proUsersSheetUrl;
   const enc = encodeURIComponent(url);
@@ -687,70 +687,22 @@ async function fetchProRecords() {
     async()=>{ const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
     async()=>{ const r=await fetch(url,{signal:AbortSignal.timeout(6000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
   ];
-  for (let i=0; i<strategies.length; i++) {
-    try {
+  for(let i=0;i<strategies.length;i++){
+    try{
       const text=await strategies[i]();
-      if (!text||text.length<3) continue;
+      if(!text||text.length<3) continue;
       const records=text.trim().split('\n').slice(1).map(line=>{
         const cols=line.split(',').map(c=>c.replace(/"/g,'').trim());
-        return {email:(cols[0]||'').toLowerCase(), expiry:(cols[1]||'').trim()};
+        return{email:(cols[0]||'').toLowerCase(),expiry:(cols[1]||'').trim()};
       }).filter(r=>r.email.includes('@'));
       console.log('✅ Pro sheet loaded via strategy',i+1,'|',records.length,'records');
       return records;
-    } catch(e){ console.warn('Sheet strategy',i+1,'failed:',e.message); }
+    }catch(e){console.warn('Sheet strategy',i+1,'failed:',e.message);}
   }
   return null;
 }
 
-// ─── VERIFY PRO ON QUIZ START ──────────────────────
-async function verifyProStatus() {
-  if (!isPremium(state.user)) return true;
-  const proEmail = getProEmail(state.user);
-  if (!proEmail) return true; // legacy unlock — allow
-  const records = await fetchProRecords();
-  if (!records) { console.warn('⚠️ Network error — allowing quiz'); return true; }
-  const today = new Date().toISOString().slice(0,10);
-  const record = records.find(r=>r.email===proEmail);
-  if (!record) { revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.'); return false; }
-  if (record.expiry && record.expiry < today) { revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`); return false; }
-  return true;
-}
-
-// ─── VERIFY PRO ON APP OPEN (silent background) ────
-async function verifyProOnLoad() {
-  if (!isPremium(state.user)) return;
-  const proEmail = getProEmail(state.user);
-  if (!proEmail) return; // legacy unlock — no email stored, skip
-  const records = await fetchProRecords();
-  if (!records) return; // network failure — don't revoke
-  const today = new Date().toISOString().slice(0,10);
-  const record = records.find(r=>r.email===proEmail);
-  if (!record) {
-    // Email removed from sheet — silently revoke
-    const users=getUsers();
-    if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
-    clearProEmail(state.user);
-    const chip=document.getElementById('header-plan-chip');
-    if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
-    updateDailyBanner(); renderEB();
-    console.log('🔒 Pro revoked on load — email no longer in sheet');
-    alert('🔒 Your Pro subscription has ended.\n\nYou have been moved to the Free plan. To renew, tap Upgrade to Pro.');
-    showUpgradeModal();
-    return;
-  }
-  if (record.expiry && record.expiry < today) {
-    const users=getUsers();
-    if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
-    clearProEmail(state.user);
-    const chip=document.getElementById('header-plan-chip');
-    if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
-    updateDailyBanner(); renderEB();
-    console.log('🔒 Pro revoked on load — subscription expired');
-    alert(`🔒 Your Pro subscription expired on ${record.expiry}.\n\nYou have been moved to the Free plan. Please renew to continue.`);
-    showUpgradeModal();
-  }
-}
-
+// ─── REVOKE PRO ACCESS ─────────────────────────────
 function revokeProAccess(message) {
   const users=getUsers();
   if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
@@ -758,7 +710,50 @@ function revokeProAccess(message) {
   const chip=document.getElementById('header-plan-chip');
   if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
   updateDailyBanner(); renderEB(); showScreen('s-home');
-  setTimeout(()=>{alert('🔒 '+message); showUpgradeModal();}, 200);
+  setTimeout(()=>{alert('🔒 '+message); showUpgradeModal();},200);
+}
+
+// ─── VERIFY ON APP OPEN ─────────────────────────────
+// KEY FIX: no stored email = REVOKE (not allow through)
+// This catches devices that unlocked Pro before email-tracking was added
+async function verifyProOnLoad() {
+  if (!isPremium(state.user)) return;
+  const proEmail = getProEmail(state.user);
+
+  // No stored email = old unlock with no email saved = must re-verify
+  if (!proEmail) {
+    console.log('🔒 Pro flagged: no email stored — revoking and requiring re-verification');
+    revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.');
+    return;
+  }
+
+  const records = await fetchProRecords();
+  if (!records) { console.warn('⚠️ Network error on load — keeping Pro status for now'); return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  const record = records.find(r=>r.email===proEmail);
+
+  if (!record) {
+    revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');
+  } else if (record.expiry && record.expiry < today) {
+    revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);
+  } else {
+    console.log('✅ Pro verified on load for', proEmail);
+  }
+}
+
+// ─── VERIFY ON QUIZ START ──────────────────────────
+async function verifyProStatus() {
+  if (!isPremium(state.user)) return true;
+  const proEmail = getProEmail(state.user);
+  if (!proEmail) { revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.'); return false; }
+  const records = await fetchProRecords();
+  if (!records) { console.warn('⚠️ Network error — allowing quiz'); return true; }
+  const today = new Date().toISOString().slice(0,10);
+  const record = records.find(r=>r.email===proEmail);
+  if (!record) { revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.'); return false; }
+  if (record.expiry && record.expiry < today) { revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`); return false; }
+  return true;
 }
 
 // ─── DAILY QUOTA ───────────────────────────────────
@@ -1225,20 +1220,20 @@ function renderQuestion() {
   document.getElementById('feedback').innerHTML = '';
   document.getElementById('btn-next').className = 'btn-next';
 
-  const origOpts = [q.option_a, q.option_b, q.option_c, q.option_d];
-  const origCorrectIdx = ['A','B','C','D'].indexOf((q.correct_answer||'').trim().toUpperCase());
-  const correctText = (origOpts[origCorrectIdx]||'').trim();
-  const shuffleIdx = [0,1,2,3]; shuffle(shuffleIdx);
-  const opts = shuffleIdx.map(i => (origOpts[i]||'').trim());
-  const seen = new Set();
-  const hasDupe = opts.some(o=>{ if(seen.has(o.toLowerCase()))return true; seen.add(o.toLowerCase()); return false; });
-  if (hasDupe || !correctText || !opts.includes(correctText)) {
-    console.warn('⚠️ Skipping invalid question:', q.question);
+  const origOpts=[q.option_a,q.option_b,q.option_c,q.option_d];
+  const origCorrectIdx=['A','B','C','D'].indexOf((q.correct_answer||'').trim().toUpperCase());
+  const correctText=(origOpts[origCorrectIdx]||'').trim();
+  const shuffleIdx=[0,1,2,3]; shuffle(shuffleIdx);
+  const opts=shuffleIdx.map(i=>(origOpts[i]||'').trim());
+  const seen=new Set();
+  const hasDupe=opts.some(o=>{if(seen.has(o.toLowerCase()))return true;seen.add(o.toLowerCase());return false;});
+  if(hasDupe||!correctText||!opts.includes(correctText)){
+    console.warn('⚠️ Skipping invalid question:',q.question);
     state.currentIndex++;
-    if (state.currentIndex >= state.quizQuestions.length) { showResults(); return; }
-    renderQuestion(); return;
+    if(state.currentIndex>=state.quizQuestions.length){showResults();return;}
+    renderQuestion();return;
   }
-  const correctIdx = opts.indexOf(correctText);
+  const correctIdx=opts.indexOf(correctText);
   const body = document.getElementById('q-body');
   body.innerHTML = '';
   const grid = document.createElement('div');
@@ -1534,7 +1529,7 @@ async function activatePremium() {
   const records = await fetchProRecords();
   document.body.removeChild(ov);
   if (!records) { alert('⚠️ Could not connect.\n\nCheck internet and try again, or email zhur02@gmail.com.'); return; }
-  const record = records.find(r => r.email === trimmed);
+  const record = records.find(r=>r.email===trimmed);
   if (!record) { alert('❌ Email not found.\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min then retry\n• Help? Email zhur02@gmail.com'); return; }
   const today = new Date().toISOString().slice(0,10);
   if (record.expiry && record.expiry < today) { alert(`⏰ Subscription expired on ${record.expiry}.\n\nPlease renew: ${CONFIG.stripeUrl}`); return; }
@@ -1554,8 +1549,8 @@ function submitFeedback() {
   const subject=document.getElementById('fb-subject').value.trim();
   const message=document.getElementById('fb-message').value.trim();
   const email=document.getElementById('fb-email').value.trim();
-  if (!subject){alert('Please enter a subject.');return;}
-  if (!message){alert('Please enter a message.');return;}
+  if(!subject){alert('Please enter a subject.');return;}
+  if(!message){alert('Please enter a message.');return;}
   const typeLabels={suggestion:'💡 Feature Suggestion',bug:'🐛 Bug Report',question:'❓ Question / Content',compliment:'⭐ Compliment',other:'Other'};
   const submitBtn=document.querySelector('.fb-submit');
   submitBtn.textContent='Sending…'; submitBtn.disabled=true;
@@ -1569,9 +1564,9 @@ function submitFeedback() {
     if(data.ok){
       document.getElementById('fb-success').style.display='block';
       ['fb-subject','fb-message','fb-email'].forEach(id=>document.getElementById(id).value='');
-    } else { alert('Could not send. Please email zhur02@gmail.com directly.'); }
+    }else{alert('Could not send. Please email zhur02@gmail.com directly.');}
   })
-  .catch(()=>{ submitBtn.textContent='Send Feedback →'; submitBtn.disabled=false; alert('Network error. Please try again.'); });
+  .catch(()=>{submitBtn.textContent='Send Feedback →';submitBtn.disabled=false;alert('Network error. Please try again.');});
 }
 
 // ═══════════════════════════════════════════════════
@@ -1582,7 +1577,7 @@ function showFeedbackScreen() {
   showScreen('s-feedback');
 }
 
-// ─── FEEDBACK / SETUP HELPERS ──────────────────────
+// showFeedbackScreen and showSetupHelp below
 
 function showSetupHelp() {
   alert('To connect your Google Sheet:\n\n1. Open your Google Sheet\n2. Click File → Share → Publish to web\n3. Choose the Questions sheet, format = CSV\n4. Click Publish and copy the URL\n5. Open this HTML file in a text editor\n6. Find CONFIG.sheetCsvUrl near the top\n7. Paste the URL between the quotes\n8. Save and reopen in your browser');
@@ -1633,9 +1628,8 @@ const EMBEDDED_QUESTIONS = [
   const saved = getSession();
   const name = (saved && users[saved]) ? saved : DEFAULT_USER;
   enterApp(name);
-  // Load questions + verify Pro status in background
   await loadData();
-  verifyProOnLoad(); // silently check if Pro email still in sheet
+  verifyProOnLoad(); // silently revokes if email not in sheet or expired
 })();
 </script>
 </body>
