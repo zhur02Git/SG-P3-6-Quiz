@@ -392,6 +392,26 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
 .fb-success-text{font-size:13.5px;font-weight:700;color:var(--green);}
 .fb-note{font-size:11px;color:var(--ink2);margin-top:14px;text-align:center;line-height:1.5;}
 
+/* INSTALL GUIDE */
+.install-guide{margin-top:28px;}
+.install-guide-title{font-family:'DM Serif Display',serif;font-size:17px;display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--ink);}
+.install-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:640px){.install-cards{grid-template-columns:1fr;}}
+.install-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:22px 20px;box-shadow:0 4px 16px var(--shadow);}
+.install-card-header{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.install-card-icon{font-size:22px;}
+.install-card-title{font-weight:900;font-size:15px;}
+.install-card-sub{font-size:11.5px;color:var(--ink2);font-weight:700;margin-bottom:14px;margin-top:1px;}
+.install-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+.install-step{display:flex;align-items:flex-start;gap:10px;font-size:13px;font-weight:600;line-height:1.45;}
+.install-step-num{width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#fff;
+  font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.install-step b{font-weight:800;}
+.install-step a{color:var(--accent);font-weight:800;font-family:monospace;font-size:11.5px;
+  background:rgba(201,75,10,.07);border:1px solid rgba(201,75,10,.2);border-radius:5px;padding:1px 5px;text-decoration:none;word-break:break-all;}
+.install-tip{background:rgba(20,96,176,.06);border:1.5px solid rgba(20,96,176,.18);border-radius:9px;
+  padding:9px 13px;font-size:11.5px;font-weight:700;color:var(--accent2);line-height:1.5;}
+
 /* LIMIT REACHED OVERLAY */
 .limit-overlay{background:rgba(201,75,10,.06);border:2px solid rgba(201,75,10,.25);border-radius:18px;
   padding:36px 28px;text-align:center;margin:20px 0;}
@@ -472,6 +492,87 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
       <div id="eb-sidebar-body"></div>
     </div>
   </div>
+
+  <!-- ADD TO HOME SCREEN GUIDE -->
+  <div class="install-guide" id="install-guide">
+    <div class="install-guide-title">📲 Add to your phone's Home Screen</div>
+    <div class="install-cards">
+
+      <!-- iPhone -->
+      <div class="install-card">
+        <div class="install-card-header">
+          <span class="install-card-icon">🍎</span>
+          <span class="install-card-title">iPhone Setup</span>
+        </div>
+        <div class="install-card-sub">Use <b>Safari</b> — not Chrome</div>
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="install-step-num">1</div>
+            <span>Open <b style="color:var(--accent2)">Safari</b> on your iPhone.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">2</div>
+            <span>Go to: <a href="https://zhur02git.github.io/SG-P3-6-Quiz/" target="_blank">https://zhur02git.github.io/SG-P3-6-Quiz/</a></span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">3</div>
+            <span>Tap the <b style="color:var(--accent2)">Share icon ↑</b> — 3rd icon in Safari's bottom toolbar.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">4</div>
+            <span>Scroll down and tap <b style="color:var(--accent2)">"Add to Home Screen"</b>.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">5</div>
+            <span>Edit the name if needed, then tap <b style="color:var(--accent2)">"Add"</b>.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">6</div>
+            <span>🎉 The app icon appears on your home screen!</span>
+          </div>
+        </div>
+        <div class="install-tip">💡 Must use Safari — Chrome on iPhone does not support this.</div>
+      </div>
+
+      <!-- Android -->
+      <div class="install-card">
+        <div class="install-card-header">
+          <span class="install-card-icon">🤖</span>
+          <span class="install-card-title">Android Setup</span>
+        </div>
+        <div class="install-card-sub">Use <b>Google Chrome</b></div>
+        <div class="install-steps">
+          <div class="install-step">
+            <div class="install-step-num">1</div>
+            <span>Open <b style="color:var(--accent2)">Google Chrome</b> on your Android phone.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">2</div>
+            <span>Go to: <a href="https://zhur02git.github.io/SG-P3-6-Quiz/" target="_blank">https://zhur02git.github.io/SG-P3-6-Quiz/</a></span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">3</div>
+            <span>Tap the <b style="color:var(--accent2)">three-dot menu ⋮</b> at the <b>top right</b> of Chrome.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">4</div>
+            <span>Select <b style="color:var(--accent2)">"Add to Home screen"</b>.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">5</div>
+            <span>Edit the name if needed, then tap <b style="color:var(--accent2)">"Add"</b>.</span>
+          </div>
+          <div class="install-step">
+            <div class="install-step-num">6</div>
+            <span>🎉 The app icon appears on your home screen!</span>
+          </div>
+        </div>
+        <div class="install-tip">💡 The ⋮ menu is at the <b>top-right</b> of Chrome — not the bottom.</div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- SCREEN 2: SUBJECT -->
@@ -1597,6 +1698,17 @@ function confettiShow() {
 const EMBEDDED_QUESTIONS = [
 ];
 
+
+// Hide install guide if already running as installed PWA
+(function() {
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches;
+  if (isStandalone) {
+    const el = document.getElementById('install-guide');
+    if (el) el.style.display = 'none';
+  }
+})();
 
 // ═══════════════════════════════════════════════════
 //  BOOT
