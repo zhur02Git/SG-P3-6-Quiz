@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>SG Study Quiz · Primary School P3–P6</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -662,12 +665,10 @@ function isPremium(user){
   return u && u.premium === true;
 }
 
-// ─── PRO EMAIL STORAGE ─────────────────────────────
 function getProEmail(user){ return localStorage.getItem('sgq_pro_email_'+user)||''; }
 function saveProEmail(user,email){ localStorage.setItem('sgq_pro_email_'+user,email); }
 function clearProEmail(user){ localStorage.removeItem('sgq_pro_email_'+user); }
 
-// ─── QUESTION QUALITY FILTER ───────────────────────
 function isValidQuestion(q) {
   const opts=[q.option_a,q.option_b,q.option_c,q.option_d].map(o=>(o||'').trim().toLowerCase());
   if(opts.some(o=>o==='')) return false;
@@ -676,16 +677,14 @@ function isValidQuestion(q) {
   return true;
 }
 
-// ─── PRO SHEET FETCH ───────────────────────────────
 async function fetchProRecords() {
-  const url = CONFIG.proUsersSheetUrl;
-  const enc = encodeURIComponent(url);
-  const strategies = [
-    async()=>{ const r=await fetch('https://corsproxy.io/?'+enc,{signal:AbortSignal.timeout(6000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
-    async()=>{ const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+enc,{signal:AbortSignal.timeout(6000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
-    async()=>{ const r=await fetch('https://api.allorigins.win/get?url='+enc,{signal:AbortSignal.timeout(8000)}); const j=await r.json(); return j.contents; },
-    async()=>{ const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
-    async()=>{ const r=await fetch(url,{signal:AbortSignal.timeout(6000)}); if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); },
+  const url=CONFIG.proUsersSheetUrl, enc=encodeURIComponent(url);
+  const strategies=[
+    async()=>{const r=await fetch('https://corsproxy.io/?'+enc,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+enc,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch('https://api.allorigins.win/get?url='+enc,{signal:AbortSignal.timeout(8000)});const j=await r.json();return j.contents;},
+    async()=>{const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
   ];
   for(let i=0;i<strategies.length;i++){
     try{
@@ -695,64 +694,52 @@ async function fetchProRecords() {
         const cols=line.split(',').map(c=>c.replace(/"/g,'').trim());
         return{email:(cols[0]||'').toLowerCase(),expiry:(cols[1]||'').trim()};
       }).filter(r=>r.email.includes('@'));
-      console.log('✅ Pro sheet loaded via strategy',i+1,'|',records.length,'records');
+      console.log('✅ Pro sheet via strategy',i+1,records.length,'records');
       return records;
-    }catch(e){console.warn('Sheet strategy',i+1,'failed:',e.message);}
+    }catch(e){console.warn('Strategy',i+1,'failed:',e.message);}
   }
   return null;
 }
 
-// ─── REVOKE PRO ACCESS ─────────────────────────────
-function revokeProAccess(message) {
+function revokeProAccess(msg) {
   const users=getUsers();
   if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
   clearProEmail(state.user);
   const chip=document.getElementById('header-plan-chip');
   if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
-  updateDailyBanner(); renderEB(); showScreen('s-home');
-  setTimeout(()=>{alert('🔒 '+message); showUpgradeModal();},200);
+  updateDailyBanner();renderEB();showScreen('s-home');
+  setTimeout(()=>{alert('🔒 '+msg);showUpgradeModal();},200);
 }
 
-// ─── VERIFY ON APP OPEN ─────────────────────────────
-// KEY FIX: no stored email = REVOKE (not allow through)
-// This catches devices that unlocked Pro before email-tracking was added
+// Runs on every app open — no stored email = revoke immediately
 async function verifyProOnLoad() {
-  if (!isPremium(state.user)) return;
-  const proEmail = getProEmail(state.user);
-
-  // No stored email = old unlock with no email saved = must re-verify
-  if (!proEmail) {
-    console.log('🔒 Pro flagged: no email stored — revoking and requiring re-verification');
+  if(!isPremium(state.user)) return;
+  const proEmail=getProEmail(state.user);
+  if(!proEmail){
+    // No email stored = old unlock before email tracking — must re-verify
     revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.');
     return;
   }
-
-  const records = await fetchProRecords();
-  if (!records) { console.warn('⚠️ Network error on load — keeping Pro status for now'); return; }
-
-  const today = new Date().toISOString().slice(0,10);
-  const record = records.find(r=>r.email===proEmail);
-
-  if (!record) {
-    revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');
-  } else if (record.expiry && record.expiry < today) {
-    revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);
-  } else {
-    console.log('✅ Pro verified on load for', proEmail);
-  }
+  const records=await fetchProRecords();
+  if(!records){console.warn('⚠️ Network error on load — keeping Pro');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const record=records.find(r=>r.email===proEmail);
+  if(!record){revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');}
+  else if(record.expiry&&record.expiry<today){revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);}
+  else{console.log('✅ Pro verified on load for',proEmail);}
 }
 
-// ─── VERIFY ON QUIZ START ──────────────────────────
+// Runs before every quiz start
 async function verifyProStatus() {
-  if (!isPremium(state.user)) return true;
-  const proEmail = getProEmail(state.user);
-  if (!proEmail) { revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.'); return false; }
-  const records = await fetchProRecords();
-  if (!records) { console.warn('⚠️ Network error — allowing quiz'); return true; }
-  const today = new Date().toISOString().slice(0,10);
-  const record = records.find(r=>r.email===proEmail);
-  if (!record) { revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.'); return false; }
-  if (record.expiry && record.expiry < today) { revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`); return false; }
+  if(!isPremium(state.user)) return true;
+  const proEmail=getProEmail(state.user);
+  if(!proEmail){revokeProAccess('Please re-enter your payment email to confirm your Pro subscription.');return false;}
+  const records=await fetchProRecords();
+  if(!records){console.warn('⚠️ Network error — allowing quiz');return true;}
+  const today=new Date().toISOString().slice(0,10);
+  const record=records.find(r=>r.email===proEmail);
+  if(!record){revokeProAccess('Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');return false;}
+  if(record.expiry&&record.expiry<today){revokeProAccess(`Your Pro subscription expired on ${record.expiry}.\n\nPlease renew.`);return false;}
   return true;
 }
 
@@ -957,11 +944,9 @@ function getTopicsForSelection() {
 }
 
 function getQuestionsForQuiz() {
-  let pool = allQuestions.filter(q =>
-    q.level === state.level && q.subject === state.subject && isValidQuestion(q)
-  );
+  let pool=allQuestions.filter(q=>q.level===state.level&&q.subject===state.subject&&isValidQuestion(q));
   shuffle(pool);
-  return pool.slice(0, state.questionCount);
+  return pool.slice(0,state.questionCount);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1113,10 +1098,7 @@ function pickDiff(diff) {
 
 
 async function startQuiz(ebMode) {
-  if (isPremium(state.user)) {
-    const stillValid = await verifyProStatus();
-    if (!stillValid) return;
-  }
+  if(isPremium(state.user)){const ok=await verifyProStatus();if(!ok)return;}
   // Daily limit check (free users only)
   if (!isPremium(state.user)) {
     if (ebMode && !canStartEB(state.user)) {
@@ -1223,14 +1205,13 @@ function renderQuestion() {
   const origOpts=[q.option_a,q.option_b,q.option_c,q.option_d];
   const origCorrectIdx=['A','B','C','D'].indexOf((q.correct_answer||'').trim().toUpperCase());
   const correctText=(origOpts[origCorrectIdx]||'').trim();
-  const shuffleIdx=[0,1,2,3]; shuffle(shuffleIdx);
+  const shuffleIdx=[0,1,2,3];shuffle(shuffleIdx);
   const opts=shuffleIdx.map(i=>(origOpts[i]||'').trim());
   const seen=new Set();
   const hasDupe=opts.some(o=>{if(seen.has(o.toLowerCase()))return true;seen.add(o.toLowerCase());return false;});
   if(hasDupe||!correctText||!opts.includes(correctText)){
-    console.warn('⚠️ Skipping invalid question:',q.question);
-    state.currentIndex++;
-    if(state.currentIndex>=state.quizQuestions.length){showResults();return;}
+    console.warn('⚠️ Skipping bad question:',q.question);
+    state.currentIndex++;if(state.currentIndex>=state.quizQuestions.length){showResults();return;}
     renderQuestion();return;
   }
   const correctIdx=opts.indexOf(correctText);
@@ -1369,41 +1350,26 @@ function showResults() {
   renderEB();
 }
 
-function goHomeEB() { showScreen('s-home'); setTimeout(() => practiceEB(), 300); }
+function goHomeEB(){showScreen('s-home');setTimeout(()=>practiceEB(),300);}
 
-function moreQuizSameSubject() {
-  if (!isPremium(state.user) && !canStartQuiz(state.user)) {
+function moreQuizSameSubject(){
+  if(!isPremium(state.user)&&!canStartQuiz(state.user)){
     showScreen('s-home');
-    const existing = document.getElementById('limit-overlay-home');
-    if (existing) existing.remove();
-    const ov = document.createElement('div');
-    ov.id = 'limit-overlay-home'; ov.className = 'limit-overlay';
-    ov.innerHTML = `<div class="limit-emoji">⏸️</div>
-      <div class="limit-title">Daily quiz limit reached</div>
-      <div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today. Resets at midnight.</div>
-      <button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button>
-      <button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
-    document.querySelector('#s-home .home-layout').prepend(ov);
-    return;
+    const ex=document.getElementById('limit-overlay-home');if(ex)ex.remove();
+    const ov=document.createElement('div');ov.id='limit-overlay-home';ov.className='limit-overlay';
+    ov.innerHTML=`<div class="limit-emoji">⏸️</div><div class="limit-title">Daily quiz limit reached</div><div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today. Resets at midnight.</div><button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button><button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
+    document.querySelector('#s-home .home-layout').prepend(ov);return;
   }
-  const justAnswered = new Set(state.answers.map(a => a.q.question));
-  let pool = allQuestions.filter(q =>
-    q.level === state.level && q.subject === state.subject &&
-    isValidQuestion(q) && !justAnswered.has(q.question)
-  );
-  if (pool.length < state.questionCount) {
-    pool = allQuestions.filter(q => q.level === state.level && q.subject === state.subject && isValidQuestion(q));
-  }
-  shuffle(pool);
-  state.quizQuestions = pool.slice(0, state.questionCount);
-  if (state.quizQuestions.length === 0) { alert('No questions available.'); return; }
-  if (!isPremium(state.user)) incDailyCount(state.user);
-  updateDailyBanner();
-  state.currentIndex = 0; state.score = 0; state.answers = [];
-  state.isErrorBankMode = false;
-  document.getElementById('quiz-mode-tag').textContent = 'Quiz';
-  document.getElementById('quiz-mode-tag').className = 'quiz-mode-tag normal';
-  showScreen('s-quiz'); renderQuestion();
+  const justAnswered=new Set(state.answers.map(a=>a.q.question));
+  let pool=allQuestions.filter(q=>q.level===state.level&&q.subject===state.subject&&isValidQuestion(q)&&!justAnswered.has(q.question));
+  if(pool.length<state.questionCount)pool=allQuestions.filter(q=>q.level===state.level&&q.subject===state.subject&&isValidQuestion(q));
+  shuffle(pool);state.quizQuestions=pool.slice(0,state.questionCount);
+  if(state.quizQuestions.length===0){alert('No questions available.');return;}
+  if(!isPremium(state.user))incDailyCount(state.user);
+  updateDailyBanner();state.currentIndex=0;state.score=0;state.answers=[];state.isErrorBankMode=false;
+  document.getElementById('quiz-mode-tag').textContent='Quiz';
+  document.getElementById('quiz-mode-tag').className='quiz-mode-tag normal';
+  showScreen('s-quiz');renderQuestion();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1517,34 +1483,30 @@ function goSubscribe() {
   }
 }
 
-async function activatePremium() {
-  const email = prompt('Enter the email address you used to pay:');
-  if (!email) return;
-  const trimmed = email.trim().toLowerCase();
-  if (!trimmed.includes('@')) { alert('Please enter a valid email address.'); return; }
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px 40px;text-align:center;font-family:Nunito,sans-serif;max-width:300px"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:800;margin-bottom:6px">Checking your account…</div><div style="font-size:12px;color:#6a5c4f">This takes a few seconds</div></div>';
+async function activatePremium(){
+  const email=prompt('Enter the email address you used to pay:');if(!email)return;
+  const trimmed=email.trim().toLowerCase();
+  if(!trimmed.includes('@')){alert('Please enter a valid email address.');return;}
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px 40px;text-align:center;font-family:Nunito,sans-serif;max-width:300px"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:800;margin-bottom:6px">Checking your account…</div><div style="font-size:12px;color:#6a5c4f">This takes a few seconds</div></div>';
   document.body.appendChild(ov);
-  const records = await fetchProRecords();
+  const records=await fetchProRecords();
   document.body.removeChild(ov);
-  if (!records) { alert('⚠️ Could not connect.\n\nCheck internet and try again, or email zhur02@gmail.com.'); return; }
-  const record = records.find(r=>r.email===trimmed);
-  if (!record) { alert('❌ Email not found.\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min then retry\n• Help? Email zhur02@gmail.com'); return; }
-  const today = new Date().toISOString().slice(0,10);
-  if (record.expiry && record.expiry < today) { alert(`⏰ Subscription expired on ${record.expiry}.\n\nPlease renew: ${CONFIG.stripeUrl}`); return; }
-  const users = getUsers();
-  if (users[state.user]) { users[state.user].premium = true; saveUsers(users); }
-  saveProEmail(state.user, trimmed);
+  if(!records){alert('⚠️ Could not connect.\n\nCheck internet and try again, or email zhur02@gmail.com.');return;}
+  const record=records.find(r=>r.email===trimmed);
+  if(!record){alert('❌ Email not found.\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min then retry\n• Help? Email zhur02@gmail.com');return;}
+  const today=new Date().toISOString().slice(0,10);
+  if(record.expiry&&record.expiry<today){alert(`⏰ Subscription expired on ${record.expiry}.\n\nPlease renew: ${CONFIG.stripeUrl}`);return;}
+  const users=getUsers();if(users[state.user]){users[state.user].premium=true;saveUsers(users);}
+  saveProEmail(state.user,trimmed);
   closeUpgradeModal();
-  const chip = document.getElementById('header-plan-chip');
-  chip.textContent = '⭐ PRO'; chip.className = 'plan-chip pro';
-  updateDailyBanner(); renderEB();
-  const expiryMsg = record.expiry ? `\nActive until: ${record.expiry}` : '';
-  alert(`⭐ Pro unlocked!${expiryMsg}\n\nUnlimited quizzes and full Error Bank access.`);
+  const chip=document.getElementById('header-plan-chip');chip.textContent='⭐ PRO';chip.className='plan-chip pro';
+  updateDailyBanner();renderEB();
+  alert(`⭐ Pro unlocked!${record.expiry?'\nActive until: '+record.expiry:''}\n\nUnlimited quizzes and full Error Bank access.`);
 }
 
-function submitFeedback() {
+function submitFeedback(){
   const type=document.getElementById('fb-type').value;
   const subject=document.getElementById('fb-subject').value.trim();
   const message=document.getElementById('fb-message').value.trim();
@@ -1552,21 +1514,17 @@ function submitFeedback() {
   if(!subject){alert('Please enter a subject.');return;}
   if(!message){alert('Please enter a message.');return;}
   const typeLabels={suggestion:'💡 Feature Suggestion',bug:'🐛 Bug Report',question:'❓ Question / Content',compliment:'⭐ Compliment',other:'Other'};
-  const submitBtn=document.querySelector('.fb-submit');
-  submitBtn.textContent='Sending…'; submitBtn.disabled=true;
+  const btn=document.querySelector('.fb-submit');btn.textContent='Sending…';btn.disabled=true;
   fetch('https://formspree.io/f/'+CONFIG.formspreeId,{
     method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify({_subject:'[SG Study Quiz] '+(typeLabels[type]||type)+': '+subject,type:typeLabels[type]||type,subject,message,from_user:state.user||'Unknown',reply_to:email||'(not provided)'})
   })
   .then(r=>r.json())
-  .then(data=>{
-    submitBtn.textContent='Send Feedback →'; submitBtn.disabled=false;
-    if(data.ok){
-      document.getElementById('fb-success').style.display='block';
-      ['fb-subject','fb-message','fb-email'].forEach(id=>document.getElementById(id).value='');
-    }else{alert('Could not send. Please email zhur02@gmail.com directly.');}
+  .then(data=>{btn.textContent='Send Feedback →';btn.disabled=false;
+    if(data.ok){document.getElementById('fb-success').style.display='block';['fb-subject','fb-message','fb-email'].forEach(id=>document.getElementById(id).value='');}
+    else{alert('Could not send. Please email zhur02@gmail.com directly.');}
   })
-  .catch(()=>{submitBtn.textContent='Send Feedback →';submitBtn.disabled=false;alert('Network error. Please try again.');});
+  .catch(()=>{btn.textContent='Send Feedback →';btn.disabled=false;alert('Network error. Please try again.');});
 }
 
 // ═══════════════════════════════════════════════════
@@ -1577,7 +1535,7 @@ function showFeedbackScreen() {
   showScreen('s-feedback');
 }
 
-// showFeedbackScreen and showSetupHelp below
+// ─── SETUP HELPER ──────────────────────────────────
 
 function showSetupHelp() {
   alert('To connect your Google Sheet:\n\n1. Open your Google Sheet\n2. Click File → Share → Publish to web\n3. Choose the Questions sheet, format = CSV\n4. Click Publish and copy the URL\n5. Open this HTML file in a text editor\n6. Find CONFIG.sheetCsvUrl near the top\n7. Paste the URL between the quotes\n8. Save and reopen in your browser');
@@ -1629,7 +1587,7 @@ const EMBEDDED_QUESTIONS = [
   const name = (saved && users[saved]) ? saved : DEFAULT_USER;
   enterApp(name);
   await loadData();
-  verifyProOnLoad(); // silently revokes if email not in sheet or expired
+  verifyProOnLoad();
 })();
 </script>
 </body>
