@@ -658,17 +658,12 @@ function saveEB(user,eb){ localStorage.setItem('sgq_eb_'+user,JSON.stringify(eb)
 function getSession(){ return localStorage.getItem('sgq_session'); }
 function setSession(u){ localStorage.setItem('sgq_session',u); }
 function clearSession(){ localStorage.removeItem('sgq_session'); }
-// ─── PRO STATUS: runtime flag, NOT localStorage ────
-// localStorage premium is only a hint — actual Pro status
-// is confirmed fresh from the sheet on every app load.
-// state.proConfirmed is set to true only after sheet verification.
-function isPremium(user){
-  return state.proConfirmed === true;
-}
+// Pro status is a RUNTIME flag — never read from localStorage
+function isPremium(user){ return state.proConfirmed === true; }
 
-function getProEmail(user){ return localStorage.getItem('sgq_pro_email_'+user)||''; }
-function saveProEmail(user,email){ localStorage.setItem('sgq_pro_email_'+user,email); }
-function clearProEmail(user){ localStorage.removeItem('sgq_pro_email_'+user); }
+function getProEmail(u){ return localStorage.getItem('sgq_pro_email_'+u)||''; }
+function saveProEmail(u,e){ localStorage.setItem('sgq_pro_email_'+u,e); }
+function clearProEmail(u){ localStorage.removeItem('sgq_pro_email_'+u); }
 
 function isValidQuestion(q) {
   const opts=[q.option_a,q.option_b,q.option_c,q.option_d].map(o=>(o||'').trim().toLowerCase());
@@ -678,26 +673,38 @@ function isValidQuestion(q) {
   return true;
 }
 
+// Visible debug bar — shows on screen so you can see result on iPhone
+function showDebugBar(msg, color){
+  let bar = document.getElementById('_dbg');
+  if(!bar){ bar=document.createElement('div'); bar.id='_dbg';
+    bar.style.cssText='position:fixed;bottom:0;left:0;right:0;padding:8px 14px;font-size:11px;font-weight:800;font-family:monospace;z-index:99999;word-break:break-all;';
+    document.body.appendChild(bar); }
+  bar.style.background = color||'#333';
+  bar.style.color = '#fff';
+  bar.textContent = msg;
+}
+
 async function fetchProRecords() {
   const url=CONFIG.proUsersSheetUrl, enc=encodeURIComponent(url);
   const strategies=[
-    async()=>{const r=await fetch('https://corsproxy.io/?'+enc,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
-    async()=>{const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+enc,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
-    async()=>{const r=await fetch('https://api.allorigins.win/get?url='+enc,{signal:AbortSignal.timeout(8000)});const j=await r.json();return j.contents;},
-    async()=>{const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
-    async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch('https://corsproxy.io/?'+enc,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+enc,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch('https://api.allorigins.win/get?url='+enc,{signal:AbortSignal.timeout(10000)});const j=await r.json();return j.contents;},
+    async()=>{const r=await fetch('https://api.allorigins.win/raw?url='+enc,{signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
+    async()=>{const r=await fetch(url,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.text();},
   ];
   for(let i=0;i<strategies.length;i++){
     try{
+      showDebugBar('🔍 Checking sheet via strategy '+(i+1)+'…','#555');
       const text=await strategies[i]();
       if(!text||text.length<3) continue;
       const records=text.trim().split('\n').slice(1).map(line=>{
         const cols=line.split(',').map(c=>c.replace(/"/g,'').trim());
         return{email:(cols[0]||'').toLowerCase(),expiry:(cols[1]||'').trim()};
       }).filter(r=>r.email.includes('@'));
-      console.log('✅ Pro sheet via strategy',i+1,'|',records.length,'records');
+      showDebugBar('✅ Sheet loaded (strategy '+(i+1)+') — '+records.length+' emails','#1a7a3a');
       return records;
-    }catch(e){console.warn('Strategy',i+1,'failed:',e.message);}
+    }catch(e){ showDebugBar('⚠️ Strategy '+(i+1)+' failed: '+e.message,'#a04000'); }
   }
   return null;
 }
@@ -709,56 +716,45 @@ function applyProUI(){
   updateDailyBanner();renderEB();
 }
 
-function applyFreeUI(revoke){
+function applyFreeUI(wipe){
   state.proConfirmed=false;
-  if(revoke){
-    const users=getUsers();
-    if(users[state.user]){users[state.user].premium=false;saveUsers(users);}
-    clearProEmail(state.user);
-  }
+  if(wipe){const users=getUsers();if(users[state.user]){users[state.user].premium=false;saveUsers(users);}clearProEmail(state.user);}
   const chip=document.getElementById('header-plan-chip');
   if(chip){chip.textContent='FREE';chip.className='plan-chip free';}
   updateDailyBanner();renderEB();
 }
 
-// Called on every app open — always verifies from sheet
-// Shows a brief "Verifying…" overlay so user can't bypass
 async function verifyProOnLoad(){
-  const hadPremium=getUsers()[state.user]&&getUsers()[state.user].premium;
-  const proEmail=getProEmail(state.user);
-  if(!hadPremium&&!proEmail){
-    state.proConfirmed=false;
-    return; // free user — nothing to verify
-  }
+  const hadPremium = (getUsers()[state.user]||{}).premium;
+  const proEmail   = getProEmail(state.user);
+  if(!hadPremium && !proEmail){ state.proConfirmed=false; showDebugBar('ℹ️ Free user — no check needed','#1460b0'); return; }
 
-  // Show verification overlay — prevents using Pro UI before check completes
-  const ov=document.createElement('div');
-  ov.id='pro-verify-overlay';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(255,253,248,.95);z-index:8888;display:flex;align-items:center;justify-content:center;';
+  // Block UI with overlay
+  const ov=document.createElement('div');ov.id='pro-verify-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(255,253,248,.97);z-index:8888;display:flex;align-items:center;justify-content:center;';
   ov.innerHTML='<div style="text-align:center;font-family:Nunito,sans-serif"><div style="font-size:32px;margin-bottom:12px">🔍</div><div style="font-size:14px;font-weight:800;color:#17120e">Verifying subscription…</div></div>';
   document.body.appendChild(ov);
-
-  const removeOv=()=>{const el=document.getElementById('pro-verify-overlay');if(el)el.remove();};
+  const removeOv=()=>{const e=document.getElementById('pro-verify-ov');if(e)e.remove();};
 
   if(!proEmail){
-    // Had premium in localStorage but no email stored = old unlock, must re-verify
-    removeOv();
-    applyFreeUI(true);
-    setTimeout(()=>{
-      alert('Please re-enter your payment email to confirm your Pro subscription.');
-      showUpgradeModal();
-    },100);
+    removeOv();applyFreeUI(true);
+    showDebugBar('🔒 No email stored — revoked','#c42b2b');
+    setTimeout(()=>{alert('Please re-enter your payment email to confirm your Pro subscription.');showUpgradeModal();},100);
     return;
   }
 
+  showDebugBar('🔍 Checking: '+proEmail,'#555');
   const records=await fetchProRecords();
   removeOv();
 
   if(!records){
-    // All proxies failed — lock to be safe, show retry option
-    applyFreeUI(false); // don't wipe email — let them retry
-    alert('⚠️ Could not verify your subscription (network error).\n\nYou have been temporarily moved to Free.\n\nPlease check your connection and re-enter your email to restore Pro access.');
-    showUpgradeModal();
+    // LOCK on network failure — do NOT give benefit of the doubt
+    applyFreeUI(false); // keep email so they can retry
+    showDebugBar('❌ Network failed — locked to Free','#c42b2b');
+    setTimeout(()=>{
+      alert('⚠️ Could not verify your subscription.\n\nYou have been moved to Free until connection is restored.\n\nTap "Already paid? Enter your email →" to retry.');
+      showUpgradeModal();
+    },100);
     return;
   }
 
@@ -767,26 +763,27 @@ async function verifyProOnLoad(){
 
   if(!record){
     applyFreeUI(true);
+    showDebugBar('🔒 Email not in sheet — revoked','#c42b2b');
     setTimeout(()=>{alert('🔒 Your Pro subscription has ended.\n\nTo renew, tap Upgrade to Pro.');showUpgradeModal();},100);
   } else if(record.expiry&&record.expiry<today){
     applyFreeUI(true);
-    setTimeout(()=>{alert(`🔒 Your Pro subscription expired on ${record.expiry}.\n\nPlease renew to continue.`);showUpgradeModal();},100);
+    showDebugBar('🔒 Expired '+record.expiry+' — revoked','#c42b2b');
+    setTimeout(()=>{alert('🔒 Your subscription expired on '+record.expiry+'\n\nPlease renew to continue.');showUpgradeModal();},100);
   } else {
     applyProUI();
-    console.log('✅ Pro verified on load for',proEmail);
+    showDebugBar('✅ Pro active — '+proEmail+(record.expiry?' until '+record.expiry:''),'#1a7a3a');
   }
 }
 
-// Called before every quiz start
 async function verifyProStatus(){
   const proEmail=getProEmail(state.user);
-  if(!proEmail){applyFreeUI(true);alert('Please re-enter your payment email to confirm your Pro subscription.');showUpgradeModal();return false;}
+  if(!proEmail){applyFreeUI(true);alert('Please re-enter your payment email.');showUpgradeModal();return false;}
   const records=await fetchProRecords();
-  if(!records){applyFreeUI(false);alert('⚠️ Could not verify subscription.\n\nPlease check your connection and try again.');return false;}
+  if(!records){applyFreeUI(false);alert('⚠️ Could not verify subscription. Please check your connection.');return false;}
   const today=new Date().toISOString().slice(0,10);
   const record=records.find(r=>r.email===proEmail);
-  if(!record){applyFreeUI(true);setTimeout(()=>{alert('🔒 Your Pro subscription has ended.');showUpgradeModal();},100);return false;}
-  if(record.expiry&&record.expiry<today){applyFreeUI(true);setTimeout(()=>{alert(`🔒 Subscription expired on ${record.expiry}.`);showUpgradeModal();},100);return false;}
+  if(!record){applyFreeUI(true);setTimeout(()=>{alert('🔒 Pro subscription ended.');showUpgradeModal();},100);return false;}
+  if(record.expiry&&record.expiry<today){applyFreeUI(true);setTimeout(()=>{alert('🔒 Subscription expired '+record.expiry);showUpgradeModal();},100);return false;}
   return true;
 }
 
@@ -1144,9 +1141,7 @@ function pickDiff(diff) {
 
 
 async function startQuiz(ebMode) {
-  if(state.proConfirmed){
-    const ok=await verifyProStatus();if(!ok)return;
-  }
+  if(state.proConfirmed){const ok=await verifyProStatus();if(!ok)return;}
   // Daily limit check (free users only)
   if (!isPremium(state.user)) {
     if (ebMode && !canStartEB(state.user)) {
@@ -1258,7 +1253,6 @@ function renderQuestion() {
   const seen=new Set();
   const hasDupe=opts.some(o=>{if(seen.has(o.toLowerCase()))return true;seen.add(o.toLowerCase());return false;});
   if(hasDupe||!correctText||!opts.includes(correctText)){
-    console.warn('⚠️ Skipping bad question:',q.question);
     state.currentIndex++;if(state.currentIndex>=state.quizQuestions.length){showResults();return;}
     renderQuestion();return;
   }
@@ -1402,8 +1396,7 @@ function goHomeEB(){showScreen('s-home');setTimeout(()=>practiceEB(),300);}
 
 function moreQuizSameSubject(){
   if(!state.proConfirmed&&!canStartQuiz(state.user)){
-    showScreen('s-home');
-    const ex=document.getElementById('limit-overlay-home');if(ex)ex.remove();
+    showScreen('s-home');const ex=document.getElementById('limit-overlay-home');if(ex)ex.remove();
     const ov=document.createElement('div');ov.id='limit-overlay-home';ov.className='limit-overlay';
     ov.innerHTML=`<div class="limit-emoji">⏸️</div><div class="limit-title">Daily quiz limit reached</div><div class="limit-sub">You've used ${getDailyCount(state.user)} of ${CONFIG.FREE_DAILY_LIMIT} free quizzes today.</div><button class="btn-primary" onclick="showUpgradeModal()" style="margin-right:10px">⭐ Upgrade to Pro</button><button class="btn-secondary" onclick="this.closest('.limit-overlay').remove()">OK</button>`;
     document.querySelector('#s-home .home-layout').prepend(ov);return;
@@ -1535,43 +1528,21 @@ async function activatePremium(){
   const email=prompt('Enter the email address you used to pay:');if(!email)return;
   const trimmed=email.trim().toLowerCase();
   if(!trimmed.includes('@')){alert('Please enter a valid email address.');return;}
-  const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  ov.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px 40px;text-align:center;font-family:Nunito,sans-serif;max-width:300px"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:800;margin-bottom:6px">Checking your account…</div><div style="font-size:12px;color:#6a5c4f">This takes a few seconds</div></div>';
+  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;padding:32px 40px;text-align:center;font-family:Nunito,sans-serif;max-width:300px"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-size:15px;font-weight:800;margin-bottom:6px">Checking your account…</div></div>';
   document.body.appendChild(ov);
   const records=await fetchProRecords();
   document.body.removeChild(ov);
   if(!records){alert('⚠️ Could not connect.\n\nCheck internet and try again, or email zhur02@gmail.com.');return;}
   const record=records.find(r=>r.email===trimmed);
-  if(!record){alert('❌ Email not found.\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min then retry\n• Help? Email zhur02@gmail.com');return;}
+  if(!record){alert('❌ Email not found.\n\n• Use exact email you paid with\n• Just paid? Wait 2–3 min\n• Help? Email zhur02@gmail.com');return;}
   const today=new Date().toISOString().slice(0,10);
-  if(record.expiry&&record.expiry<today){alert(`⏰ Subscription expired on ${record.expiry}.\n\nPlease renew: ${CONFIG.stripeUrl}`);return;}
+  if(record.expiry&&record.expiry<today){alert('⏰ Subscription expired on '+record.expiry+'\n\nPlease renew: '+CONFIG.stripeUrl);return;}
   const users=getUsers();if(users[state.user]){users[state.user].premium=true;saveUsers(users);}
   saveProEmail(state.user,trimmed);
-  closeUpgradeModal();
-  applyProUI();
-  alert(`⭐ Pro unlocked!${record.expiry?'\nActive until: '+record.expiry:''}\n\nUnlimited quizzes and full Error Bank access.`);
-}
-
-function submitFeedback(){
-  const type=document.getElementById('fb-type').value;
-  const subject=document.getElementById('fb-subject').value.trim();
-  const message=document.getElementById('fb-message').value.trim();
-  const email=document.getElementById('fb-email').value.trim();
-  if(!subject){alert('Please enter a subject.');return;}
-  if(!message){alert('Please enter a message.');return;}
-  const typeLabels={suggestion:'💡 Feature Suggestion',bug:'🐛 Bug Report',question:'❓ Question / Content',compliment:'⭐ Compliment',other:'Other'};
-  const btn=document.querySelector('.fb-submit');btn.textContent='Sending…';btn.disabled=true;
-  fetch('https://formspree.io/f/'+CONFIG.formspreeId,{
-    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({_subject:'[SG Study Quiz] '+(typeLabels[type]||type)+': '+subject,type:typeLabels[type]||type,subject,message,from_user:state.user||'Unknown',reply_to:email||'(not provided)'})
-  })
-  .then(r=>r.json())
-  .then(data=>{btn.textContent='Send Feedback →';btn.disabled=false;
-    if(data.ok){document.getElementById('fb-success').style.display='block';['fb-subject','fb-message','fb-email'].forEach(id=>document.getElementById(id).value='');}
-    else{alert('Could not send. Please email zhur02@gmail.com directly.');}
-  })
-  .catch(()=>{btn.textContent='Send Feedback →';btn.disabled=false;alert('Network error. Please try again.');});
+  closeUpgradeModal();applyProUI();
+  showDebugBar('✅ Pro activated — '+trimmed,'#1a7a3a');
+  alert('⭐ Pro unlocked!'+(record.expiry?'\nActive until: '+record.expiry:'')+'\n\nUnlimited quizzes and full Error Bank access.');
 }
 
 // ═══════════════════════════════════════════════════
@@ -1582,7 +1553,19 @@ function showFeedbackScreen() {
   showScreen('s-feedback');
 }
 
-// ─── SETUP HELPER ──────────────────────────────────
+// ─── FEEDBACK ──────────────────────────────────────
+function submitFeedback(){
+  const type=document.getElementById('fb-type').value,subject=document.getElementById('fb-subject').value.trim(),message=document.getElementById('fb-message').value.trim(),email=document.getElementById('fb-email').value.trim();
+  if(!subject){alert('Please enter a subject.');return;}if(!message){alert('Please enter a message.');return;}
+  const labels={suggestion:'💡 Feature Suggestion',bug:'🐛 Bug Report',question:'❓ Question',compliment:'⭐ Compliment',other:'Other'};
+  const btn=document.querySelector('.fb-submit');btn.textContent='Sending…';btn.disabled=true;
+  fetch('https://formspree.io/f/'+CONFIG.formspreeId,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:'[SG Study Quiz] '+(labels[type]||type)+': '+subject,type:labels[type]||type,subject,message,from_user:state.user||'Unknown',reply_to:email||'(not provided)'})})
+  .then(r=>r.json()).then(d=>{btn.textContent='Send Feedback →';btn.disabled=false;
+    if(d.ok){document.getElementById('fb-success').style.display='block';['fb-subject','fb-message','fb-email'].forEach(id=>document.getElementById(id).value='');}
+    else alert('Could not send. Please email zhur02@gmail.com directly.');})
+  .catch(()=>{btn.textContent='Send Feedback →';btn.disabled=false;alert('Network error. Please try again.');});
+}
 
 function showSetupHelp() {
   alert('To connect your Google Sheet:\n\n1. Open your Google Sheet\n2. Click File → Share → Publish to web\n3. Choose the Questions sheet, format = CSV\n4. Click Publish and copy the URL\n5. Open this HTML file in a text editor\n6. Find CONFIG.sheetCsvUrl near the top\n7. Paste the URL between the quotes\n8. Save and reopen in your browser');
@@ -1626,7 +1609,7 @@ const EMBEDDED_QUESTIONS = [
 // ═══════════════════════════════════════════════════
 (async function boot() {
   allQuestions = [];
-  state.proConfirmed = false; // always start as Free — verified below
+  state.proConfirmed = false; // always start as Free
   const DEFAULT_USER = 'Student';
   const users = getUsers();
   if (!users[DEFAULT_USER]) users[DEFAULT_USER] = {quizCount:0, totalCorrect:0, premium:false};
@@ -1635,7 +1618,7 @@ const EMBEDDED_QUESTIONS = [
   const name = (saved && users[saved]) ? saved : DEFAULT_USER;
   enterApp(name);
   await loadData();
-  await verifyProOnLoad(); // blocks until Pro status is confirmed or denied
+  await verifyProOnLoad(); // must complete before user can act
 })();
 </script>
 </body>
