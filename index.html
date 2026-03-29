@@ -701,12 +701,10 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
       <div class="modal-feature pro-feat"><span class="feat-icon">✅</span>Unlimited daily quizzes<span class="feat-label pro-lbl">PRO</span></div>
       <div class="modal-feature pro-feat"><span class="feat-icon">📚</span>Error Bank — review wrong answers<span class="feat-label pro-lbl">PRO</span></div>
       <div class="modal-feature pro-feat"><span class="feat-icon">🎯</span>Practice Uncorrected Errors<span class="feat-label pro-lbl">PRO</span></div>
-      <div class="modal-feature pro-feat"><span class="feat-icon">📊</span>Full progress tracking<span class="feat-label pro-lbl">PRO</span></div>
-      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>2 quizzes per day<span class="feat-label free-lbl">FREE</span></div>
-      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>1 Error Bank session per day<span class="feat-label free-lbl">FREE</span></div>
-      <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>P3–P6 all subjects<span class="feat-label free-lbl">FREE</span></div>
     </div>
     <button class="btn-stripe" onclick="goSubscribe()">💳 Subscribe via Stripe — S$30/mo</button>
+    <div class="modal-or">— already have a code? —</div>
+    <button class="btn-code-unlock" onclick="activatePremium()">Already paid? Enter your email →</button>
     <div class="modal-or">— or invite a friend —</div>
     <button class="btn-referral" onclick="showReferralBox()">🎁 Invite a Friend — Both get 3 Days Free Pro</button>
     <div id="referral-box" class="referral-box" style="display:none">
@@ -718,8 +716,6 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
       </div>
       <div class="referral-status" id="referral-status"></div>
     </div>
-    <div class="modal-or">— already have a code? —</div>
-    <button class="btn-code-unlock" onclick="activatePremium()">Already paid? Enter your email →</button>
     <div class="modal-or">— have a referral code? —</div>
     <button class="btn-code-unlock" onclick="redeemReferral()">🎁 Enter referral code →</button>
   </div>
