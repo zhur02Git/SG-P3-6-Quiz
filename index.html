@@ -355,7 +355,15 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
   box-shadow:0 5px 18px rgba(99,91,255,.35);}
 .btn-stripe:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,91,255,.45);}
 .modal-or{font-size:11px;color:var(--ink2);font-weight:700;margin:6px 0 10px;}
-.btn-code-unlock{background:none;border:1.5px solid var(--border);border-radius:10px;
+.btn-referral{width:100%;padding:13px;border-radius:12px;border:2px dashed var(--green);background:rgba(26,148,86,.07);color:var(--green);font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all .18s;margin-top:8px;}
+.btn-referral:hover{background:rgba(26,148,86,.15);}
+.referral-box{background:rgba(26,148,86,.07);border:2px solid rgba(26,148,86,.25);border-radius:14px;padding:16px 18px;margin-top:10px;}
+.referral-link-row{display:flex;gap:8px;align-items:center;margin-top:8px;}
+.referral-link-input{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:11.5px;font-family:'Nunito',sans-serif;color:var(--ink);font-weight:700;}
+.referral-copy-btn{padding:8px 14px;border-radius:8px;background:var(--green);color:#fff;border:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.referral-status{font-size:11.5px;color:var(--ink2);font-weight:700;margin-top:8px;}
+.referral-badge{display:inline-block;background:var(--green);color:#fff;font-size:10px;font-weight:900;border-radius:20px;padding:2px 8px;margin-left:6px;}
+.modal-or{text-align:center;color:var(--ink2);font-size:12px;font-weight:700;margin:10px 0;}
   padding:9px;width:100%;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;
   color:var(--ink2);cursor:pointer;transition:all .18s;}
 .btn-code-unlock:hover{border-color:var(--amber);color:var(--amber);}
@@ -699,8 +707,21 @@ header{background:var(--ink);color:#fff;height:58px;display:flex;align-items:cen
       <div class="modal-feature free-feat"><span class="feat-icon">🟡</span>P3–P6 all subjects<span class="feat-label free-lbl">FREE</span></div>
     </div>
     <button class="btn-stripe" onclick="goSubscribe()">💳 Subscribe via Stripe — S$30/mo</button>
+    <div class="modal-or">— or invite a friend —</div>
+    <button class="btn-referral" onclick="showReferralBox()">🎁 Invite a Friend — Both get 3 Days Free Pro</button>
+    <div id="referral-box" class="referral-box" style="display:none">
+      <div style="font-size:12.5px;font-weight:800;color:var(--green);margin-bottom:4px;">🎁 Your referral link</div>
+      <div style="font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:8px;">Share this with a parent friend. When they open it and sign up, <strong>both of you</strong> get 3 days of Pro access!</div>
+      <div class="referral-link-row">
+        <input class="referral-link-input" id="referral-link-input" readonly value="Generating…">
+        <button class="referral-copy-btn" onclick="copyReferralLink()">📋 Copy</button>
+      </div>
+      <div class="referral-status" id="referral-status"></div>
+    </div>
     <div class="modal-or">— already have a code? —</div>
     <button class="btn-code-unlock" onclick="activatePremium()">Already paid? Enter your email →</button>
+    <div class="modal-or">— have a referral code? —</div>
+    <button class="btn-code-unlock" onclick="redeemReferral()">🎁 Enter referral code →</button>
   </div>
 </div>
 <div class="confetti" id="confetti"></div>
@@ -760,7 +781,11 @@ function getSession(){ return localStorage.getItem('sgq_session'); }
 function setSession(u){ localStorage.setItem('sgq_session',u); }
 function clearSession(){ localStorage.removeItem('sgq_session'); }
 // Pro status is a RUNTIME flag — never read from localStorage
-function isPremium(user){ return state.proConfirmed === true; }
+function isPremium(user){
+  // Also check active referral Pro (3-day trial from referral)
+  if (typeof hasActiveReferralPro === 'function' && hasActiveReferralPro(user)) return true;
+  return state.proConfirmed === true;
+}
 
 function getProEmail(u){ return localStorage.getItem('sgq_pro_email_'+u)||''; }
 function saveProEmail(u,e){ localStorage.setItem('sgq_pro_email_'+u,e); }
@@ -804,10 +829,13 @@ async function fetchProRecords() {
   return null;
 }
 
-function applyProUI(){
-  state.proConfirmed=true;
+function applyProUI(isReferral){
+  state.proConfirmed = !isReferral; // only set proConfirmed for paid Pro
   const chip=document.getElementById('header-plan-chip');
-  if(chip){chip.textContent='⭐ PRO';chip.className='plan-chip pro';}
+  if(chip){
+    chip.textContent = isReferral ? '🎁 PRO' : '⭐ PRO';
+    chip.className='plan-chip pro';
+  }
   updateDailyBanner();renderEB();
 }
 
@@ -822,6 +850,12 @@ function applyFreeUI(wipe){
 async function verifyProOnLoad(){
   const hadPremium = (getUsers()[state.user]||{}).premium;
   const proEmail   = getProEmail(state.user);
+
+  // Active referral Pro — no sheet check needed, just update UI
+  if (typeof hasActiveReferralPro === 'function' && hasActiveReferralPro(state.user)) {
+    applyProUI(true); return;
+  }
+
   if(!hadPremium && !proEmail){ state.proConfirmed=false; showDebugBar('ℹ️ Free user — no check needed','#1460b0'); return; }
 
   // Block UI with overlay
@@ -1714,8 +1748,9 @@ const EMBEDDED_QUESTIONS = [
 //  BOOT
 // ═══════════════════════════════════════════════════
 (async function boot() {
+  checkReferralInURL(); // capture ?ref= before anything else
   allQuestions = [];
-  state.proConfirmed = false; // always start as Free
+  state.proConfirmed = false;
   const DEFAULT_USER = 'Student';
   const users = getUsers();
   if (!users[DEFAULT_USER]) users[DEFAULT_USER] = {quizCount:0, totalCorrect:0, premium:false};
@@ -1724,8 +1759,247 @@ const EMBEDDED_QUESTIONS = [
   const name = (saved && users[saved]) ? saved : DEFAULT_USER;
   enterApp(name);
   await loadData();
-  await verifyProOnLoad(); // must complete before user can act
+  await verifyProOnLoad();
+  processPendingReferral(); // show referral prompt after app is ready
 })();
+
+// ═══════════════════════════════════════════════════
+//  REFERRAL SYSTEM
+// ═══════════════════════════════════════════════════
+
+const REFERRAL_DAYS = 3;
+
+// ── Referral Pro localStorage helpers ────────────
+function getReferralProUntil(user) {
+  try { return localStorage.getItem('sgq_ref_pro_' + user) || ''; } catch(e){ return ''; }
+}
+function setReferralProUntil(user, dateStr) {
+  localStorage.setItem('sgq_ref_pro_' + user, dateStr);
+}
+function hasActiveReferralPro(user) {
+  const until = getReferralProUntil(user);
+  if (!until) return false;
+  return new Date().toISOString().slice(0,10) <= until;
+}
+
+// Get own IP via ipify
+async function getMyIP() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json', {signal: AbortSignal.timeout(5000)});
+    const j = await r.json();
+    return j.ip || '';
+  } catch(e) { return ''; }
+}
+
+// Encode referral payload into a short base64 code
+function encodeReferralCode(email, ip) {
+  const payload = JSON.stringify({ e: email, i: ip, t: Date.now() });
+  return btoa(payload).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+}
+function decodeReferralCode(code) {
+  try {
+    const padded = code.replace(/-/g,'+').replace(/_/g,'/');
+    const pad = padded.length % 4 === 0 ? '' : '===='.slice(padded.length % 4);
+    return JSON.parse(atob(padded + pad));
+  } catch(e) { return null; }
+}
+
+// ── Generate referral link ─────────────────────────
+async function showReferralBox() {
+  const box = document.getElementById('referral-box');
+  const input = document.getElementById('referral-link-input');
+  const status = document.getElementById('referral-status');
+  box.style.display = 'block';
+  input.value = 'Generating…';
+  status.textContent = '⏳ Getting your link…';
+
+  // Use payment email if Pro, otherwise use a stable device ID
+  const proEmail = getProEmail(state.user);
+  let referrerId = proEmail;
+  if (!referrerId) {
+    // Generate a stable anonymous device ID for free users
+    let deviceId = localStorage.getItem('sgq_device_id');
+    if (!deviceId) {
+      deviceId = 'anon_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('sgq_device_id', deviceId);
+    }
+    referrerId = deviceId;
+  }
+
+  const ip = await getMyIP();
+  const code = encodeReferralCode(referrerId, ip);
+  const baseUrl = window.location.href.split('?')[0].split('#')[0];
+  const link = baseUrl + '?ref=' + code;
+  input.value = link;
+  status.textContent = '✅ Share this with a parent friend. You\'ll both get ' + REFERRAL_DAYS + ' days of Pro when they open it!';
+}
+
+function copyReferralLink() {
+  const input = document.getElementById('referral-link-input');
+  if (!input.value || input.value === 'Generating…') return;
+  navigator.clipboard.writeText(input.value).then(() => {
+    document.getElementById('referral-status').textContent = '✅ Copied! Paste it in WhatsApp, Telegram, or any message.';
+  }).catch(() => {
+    input.select(); document.execCommand('copy');
+    document.getElementById('referral-status').textContent = '✅ Copied!';
+  });
+}
+
+// ── Redeem a referral code ─────────────────────────
+async function redeemReferral() {
+  const code = prompt('Enter your referral code:');
+  if (!code || !code.trim()) return;
+
+  const payload = decodeReferralCode(code.trim());
+  if (!payload || !payload.e || !payload.t) {
+    alert('❌ Invalid referral code. Please check the code and try again.');
+    return;
+  }
+
+  // Check code age — must be within 30 days
+  const ageMs = Date.now() - payload.t;
+  if (ageMs > 30 * 24 * 60 * 60 * 1000) {
+    alert('❌ This referral code has expired (codes are valid for 30 days).');
+    return;
+  }
+
+  // Check this user hasn't already used a referral
+  if (localStorage.getItem('sgq_ref_used_' + state.user)) {
+    alert('ℹ️ You have already used a referral code before.');
+    return;
+  }
+
+  // Get current user's IP and compare with referrer's IP
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;font-family:Nunito,sans-serif;max-width:280px"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-weight:800;font-size:14px">Verifying referral…</div></div>';
+  document.body.appendChild(ov);
+
+  let myIP = '';
+  try { myIP = await getMyIP(); } catch(e){}
+
+  document.body.removeChild(ov);
+
+  // IP check — must be different from referrer
+  if (payload.i && myIP && payload.i === myIP) {
+    alert('❌ Referral codes cannot be used by the same person who created them.\n\nShare this code with a different parent!');
+    return;
+  }
+
+  // Grant referral Pro to this user
+  const today = new Date();
+  const until = new Date(today.getTime() + REFERRAL_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+  setReferralProUntil(state.user, until);
+  localStorage.setItem('sgq_ref_used_' + state.user, '1');
+  localStorage.setItem('sgq_ref_referrer_' + state.user, payload.e);
+
+  // Update UI
+  applyProUI(true);
+  closeUpgradeModal();
+  alert('🎉 Referral activated!\n\nYou have ' + REFERRAL_DAYS + ' days of Pro access — expires ' + until + '.\n\nThe friend who referred you also gets ' + REFERRAL_DAYS + ' days. Enjoy!');
+
+  // Notify via Formspree so you can add both emails to the Pro sheet
+  if (CONFIG.formspreeId) {
+    const referrerEmail = payload.e;
+    fetch('https://formspree.io/f/' + CONFIG.formspreeId, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({
+        _subject: '[SG Study Quiz] Referral Activated — Add both to Pro sheet',
+        type: '🎁 Referral',
+        message: 'A referral was successfully activated. Please add BOTH emails to the Pro sheet with expiry = ' + until + '.',
+        referrer_email: referrerEmail,
+        new_user: state.user,
+        expiry: until,
+        ip_check: myIP !== payload.i ? 'PASSED (different IPs)' : 'SKIPPED (IP unavailable)'
+      })
+    }).catch(() => {}); // silent — don't block the user
+  }
+}
+
+// ── Auto-detect referral code in URL on page load ──
+function checkReferralInURL() {
+  const params = new URLSearchParams(window.location.search);
+  const refCode = params.get('ref');
+  if (!refCode) return;
+  // Clean the URL so it doesn't stay visible
+  const cleanUrl = window.location.href.split('?')[0];
+  window.history.replaceState({}, '', cleanUrl);
+  // Store it and prompt after app loads
+  localStorage.setItem('sgq_pending_ref', refCode);
+}
+
+function processPendingReferral() {
+  const code = localStorage.getItem('sgq_pending_ref');
+  if (!code) return;
+  localStorage.removeItem('sgq_pending_ref');
+  // Small delay so app finishes loading first
+  setTimeout(async () => {
+    const payload = decodeReferralCode(code);
+    if (!payload) return;
+    const ageMs = Date.now() - payload.t;
+    if (ageMs > 30 * 24 * 60 * 60 * 1000) return; // expired
+
+    const wantsPro = confirm('🎁 You\'ve been invited!\n\nA friend shared a referral link with you. Accept it to get ' + REFERRAL_DAYS + ' days of Pro access FREE?\n\nBoth you and your friend will unlock Pro.');
+    if (!wantsPro) return;
+
+    // Check already used
+    if (localStorage.getItem('sgq_ref_used_' + state.user)) {
+      alert('ℹ️ You have already used a referral code before.');
+      return;
+    }
+
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px 36px;text-align:center;font-family:Nunito,sans-serif;max-width:280px"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-weight:800;font-size:14px">Verifying referral…</div></div>';
+    document.body.appendChild(ov);
+
+    let myIP = '';
+    try { myIP = await getMyIP(); } catch(e){}
+    document.body.removeChild(ov);
+
+    if (payload.i && myIP && payload.i === myIP) {
+      alert('❌ This referral link was created by this device. Share it with a different person!');
+      return;
+    }
+
+    const today = new Date();
+    const until = new Date(today.getTime() + REFERRAL_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+    setReferralProUntil(state.user, until);
+    localStorage.setItem('sgq_ref_used_' + state.user, '1');
+    localStorage.setItem('sgq_ref_referrer_' + state.user, payload.e);
+
+    applyProUI(true);
+    alert('🎉 Welcome! You now have ' + REFERRAL_DAYS + ' days of Pro access — expires ' + until + '.\n\nYour friend also gets ' + REFERRAL_DAYS + ' days. Happy studying!');
+
+    if (CONFIG.formspreeId) {
+      fetch('https://formspree.io/f/' + CONFIG.formspreeId, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({
+          _subject: '[SG Study Quiz] Referral Activated — Add both to Pro sheet',
+          type: '🎁 Referral (auto)',
+          message: 'Referral activated via URL. Add BOTH emails to the Pro sheet with expiry = ' + until,
+          referrer_email: payload.e,
+          new_user: state.user,
+          expiry: until,
+          ip_check: myIP !== payload.i ? 'PASSED' : 'SKIPPED'
+        })
+      }).catch(()=>{});
+    }
+  }, 1500);
+}
+
+// ── Check referral Pro expiry banner ──────────────
+function getReferralProLabel(user) {
+  const until = getReferralProUntil(user);
+  if (!until) return null;
+  const today = new Date().toISOString().slice(0,10);
+  if (today > until) return null;
+  const days = Math.ceil((new Date(until) - new Date(today)) / (24*60*60*1000));
+  return days + ' day' + (days !== 1 ? 's' : '') + ' referral Pro left';
+}
+
 </script>
 </body>
 </html>
